@@ -47,6 +47,9 @@ class abstract_reference(ABC):
         if not normalized_value:
             raise arguments_exception("Наименование не может быть пустым", "name")
 
+        if len(normalized_value) > 50:
+            raise arguments_exception("Наименование не может превышать 50 символов", "name")
+
         self._name = normalized_value
 
 
