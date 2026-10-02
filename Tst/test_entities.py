@@ -45,3 +45,25 @@ def test_abstract_model_arguments_exception_raised():
     
     with pytest.raises(arguments_exception):
         entity.name = "   "
+
+
+def test_throw_arguments_exception_model_name_too_long():
+    """
+    Проверка выброса исключения arguments_exception, если имя длиннее 50 символов.
+    """
+    entity = test_entity()
+
+    # Act & Assert
+    with pytest.raises(arguments_exception):
+         # Имя длиной 51 символ
+        entity.name = "С" * 51
+
+def test_throw_arguments_exception_model_name_invalid_type():
+    """
+    Проверка выброса исключения arguments_exception при передаче не строки (числа).
+    """
+    entity = test_entity()
+
+    # Act & Assert
+    with pytest.raises(arguments_exception):
+        entity.name = 12345
