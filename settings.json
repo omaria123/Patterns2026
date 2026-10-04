@@ -1,0 +1,12 @@
+{
+  "boss_name": "Иванов Иван Иванович",
+  "account_name": "Основной расчетный счет",
+  "is_first_start": true,
+  "organization": {
+    "name": "ООО Ромашка",
+    "inn": "1234567890",
+    "bik": "044525225",
+    "account": "40702810400000001234",
+    "ownership_form": "ООО"
+  }
+}
