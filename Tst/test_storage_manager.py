@@ -52,6 +52,9 @@ def test_success_storage_manager_first_start_generates_data():
     assert "Пицца Маргарита" in item_names
     assert "Коробка для пиццы" in item_names
 
+    # Добавляем проверку рецептов:
+    assert len(storage.recipes) == 1
+
 
 def test_success_storage_manager_first_start_disabled():
     """Проверка, что при is_first_start = False данные не генерируются."""
@@ -70,6 +73,9 @@ def test_success_storage_manager_first_start_disabled():
     assert len(storage.groups) == 0
     assert len(storage.warehouses) == 0
     assert len(storage.nomenclature) == 0
+
+    # Добавляем проверку, что рецептов 0:
+    assert len(storage.recipes) == 0
 
 
 def test_success_storage_manager_uniqueness_control():
@@ -145,3 +151,28 @@ def test_success_storage_manager_data_property():
     assert "units" in storage.data
     assert "groups" in storage.data
     assert "nomenclature" in storage.data
+
+    assert "recipes" in storage.data
+
+def test_success_storage_manager_pizza_recipe_presence_and_weights():
+    """Проверка наличия рецепта пиццы в хранилище и корректности расчета брутто/нетто."""
+    # Arrange
+    settings = settings_model()
+    settings.is_first_start = True
+
+    # Act
+    storage = storage_manager()
+    storage.convert(settings)
+
+    # Достаем созданный рецепт пиццы из хранилища
+    recipe = next(r for r in storage.recipes.values() if "Пицца Маргарита" in r.name)
+
+    # Assert: проверяем привязку к целевому блюду и количество строк ингредиентов
+    assert recipe.target_item.name == "Пицца Маргарита"
+    assert len(recipe.rows) == 8
+
+    # Assert: проверяем расчет суммарного веса Брутто и Нетто
+    # 160 + 2.5 + 10 + 3 + 90 + 120 + 5 + 1 = 391.5 (брутто)
+    # 160 + 2.5 + 10 + 3 + 85 + 115 + 4 + 1 = 380.5 (нетто)
+    assert recipe.brutto_weight == 391.5
+    assert recipe.netto_weight == 380.5
