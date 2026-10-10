@@ -70,3 +70,22 @@ class range_model(abstract_reference):
             raise arguments_exception("Базовая единица должна быть объектом типа range_model", "base_unit")
 
         self._base_unit = value
+
+    @staticmethod
+    def create_kilogram():
+        """
+        Фабричный метод для создания производной единицы измерения 'килограмм'
+        с автоматической привязкой к базовой единице 'грамм'.
+        """
+        # Создание базовой единицы измерения
+        gram = range_model()
+        gram.name = "грамм"
+        gram.conversion_factor = 1  # Базовый коэффициент всегда 1
+
+        # Создание производной единицы измерения 
+        result = range_model()
+        result.name = "килограмм"
+        result.conversion_factor = 1000
+        result.base_unit = gram  # Привязываем грамм как базовую величину
+
+        return result
