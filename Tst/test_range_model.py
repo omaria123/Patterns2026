@@ -101,3 +101,27 @@ def test_throw_arguments_exception_range_model_invalid_factor_type():
     with pytest.raises(arguments_exception):
         range_model("кг", "тысяча")
 
+def test_success_range_model_create_kilogram_factory_method():
+    """Проверка корректности полей единицы измерения, созданной фабричным методом."""
+    # Act
+    kg = range_model.create_kilogram()
+
+    # Assert: проверяем поля килограмма
+    assert kg.name == "килограмм"
+    assert kg.conversion_factor == 1000
+    assert kg.base_unit is not None
+
+    # Assert: проверяем вложенную базовую единицу (грамм)
+    assert kg.base_unit.name == "грамм"
+    assert kg.base_unit.conversion_factor == 1
+
+
+def test_success_range_model_factory_creates_new_instances():
+    """Проверка, что фабричный метод каждый раз создает новый объект"""
+    # Act: вызываем метод дважды
+    kg1 = range_model.create_kilogram()
+    kg2 = range_model.create_kilogram()
+
+    # Assert
+    assert kg1 is not kg2
+    assert kg1.id != kg2.id

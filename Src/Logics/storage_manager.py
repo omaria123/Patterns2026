@@ -6,7 +6,8 @@ from Src.Models.warehouse_model import warehouse_model
 from Src.Models.range_model import range_model
 from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
-
+from Src.Models.recipe_model import recipe_model          
+from Src.Models.recipe_row_model import recipe_row_model 
 
 class storage_manager(abstract_manager):
     """
@@ -29,6 +30,7 @@ class storage_manager(abstract_manager):
         self._units: dict = {}
         self._groups: dict = {}
         self._nomenclature: dict = {}
+        self._recipes: dict = {}
         self._is_loaded: bool = False
 
     @classmethod
@@ -37,6 +39,11 @@ class storage_manager(abstract_manager):
         if cls.__instance is not None:
             cls.__instance._init_storage()
         cls.__instance = None
+
+    def __init__(self, settings: settings_model = None) -> None:
+        """Инициализатор: сохраняет переданные настройки."""
+        if settings is not None:
+            self._settings = settings
 
     #Доступ к коллекциям через свойства
     @property
@@ -60,13 +67,19 @@ class storage_manager(abstract_manager):
         return self._nomenclature
 
     @property
+    def recipes(self) -> dict:
+        """Коллекция технологических карт {id: recipe_model}."""
+        return self._recipes
+
+    @property
     def data(self) -> dict:
         """Сводный словарь всех коллекций хранилища."""
         return {
             "warehouses": self._warehouses,
             "units": self._units,
             "groups": self._groups,
-            "nomenclature": self._nomenclature
+            "nomenclature": self._nomenclature,
+            "recipes": self._recipes
         }
 
     @property
@@ -88,6 +101,8 @@ class storage_manager(abstract_manager):
             target = self._groups
         elif isinstance(item, nomenclature_model):
             target = self._nomenclature
+        elif isinstance(item, recipe_model):
+            target = self._recipes
         else:
             raise arguments_exception("Попытка добавить неподдерживаемый тип объекта")
 
@@ -174,6 +189,29 @@ class storage_manager(abstract_manager):
 
         for item in [flour, yeast, oil, salt, cheese, sauce, basil, pizza, box]:
             self.add(item)
+
+        # 5. Технологическая карта
+        # Собираем строки через фабричный метод recipe_row_model.create(...)
+        row_flour = recipe_row_model.create(flour, brutto=160.0, netto=160.0)
+        row_yeast = recipe_row_model.create(yeast, brutto=2.5, netto=2.5)
+        row_oil = recipe_row_model.create(oil, brutto=10.0, netto=10.0)
+        row_salt = recipe_row_model.create(salt, brutto=3.0, netto=3.0)
+        row_sauce = recipe_row_model.create(sauce, brutto=90.0, netto=85.0)
+        row_cheese = recipe_row_model.create(cheese, brutto=120.0, netto=115.0)
+        row_basil = recipe_row_model.create(basil, brutto=5.0, netto=4.0)
+        row_box = recipe_row_model.create(box, brutto=1.0, netto=1.0)  # Тара по п. 3.3 ТЗ
+
+        # Собираем сам рецепт через фабричный метод recipe_model.create(...)
+        pizza_recipe = recipe_model.create(
+            name="Технологическая карта: Пицца Маргарита",
+            target_item=pizza,
+            rows=[
+                row_flour, row_yeast, row_oil, row_salt,
+                row_sauce, row_cheese, row_basil, row_box
+            ]
+        )
+
+        self.add(pizza_recipe)
 
     def load(self, file_name: str = "") -> None:
         """Загрузка данных хранилища (вызывает convert)."""
