@@ -53,6 +53,10 @@ class settings_manager(abstract_manager):
             if "is_first_start" in self.__data:
                 settings.is_first_start = bool(self.__data["is_first_start"])
 
+            # Считываем формат ответа по умолчанию
+            if "response_format" in self.__data:
+                settings.response_format = self.__data["response_format"]
+
             # Заполняем организацию
             org_data = self.__data.get("organization", {})
             if isinstance(org_data, dict):

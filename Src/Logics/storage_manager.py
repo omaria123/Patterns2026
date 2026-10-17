@@ -87,6 +87,49 @@ class storage_manager(abstract_manager):
         """Флаг успешной загрузки / готовности данных."""
         return self._is_loaded
 
+    # Поиск и получение сущностей
+
+    def _get_collection(self, entity_type: str) -> dict | None:
+        """Сопоставляет строковый тип сущности со словарем хранилища без жестких условий."""
+        if not isinstance(entity_type, str):
+            return None
+
+        # Словарь соответствий 
+        mapping = {
+            "recipe": self._recipes,
+            "nomenclature": self._nomenclature,
+            "unit": self._units,
+            "warehouse": self._warehouses,
+            "group": self._groups
+        }
+        return mapping.get(entity_type.strip().lower())
+
+    def get(self, entity_type: str, entity_id: str):
+        """
+        Поиск конкретной сущности по типу и ее ID.
+        Возвращает объект модели или None.
+        """
+        collection = self._get_collection(entity_type)
+        if collection is None or not entity_id:
+            return None
+
+        target_id = str(entity_id).strip().lower()
+        for item_id, item in collection.items():
+            if str(item_id).lower() == target_id:
+                return item
+
+        return None
+
+    def list_items(self, entity_type: str) -> list:
+        """
+        Возвращает список всех объектов указанного типа.
+        """
+        collection = self._get_collection(entity_type)
+        if collection is None:
+            return []
+        return list(collection.values())
+
+
     #Управление добавлением и контроль уникальности 
     def add(self, item) -> bool:
         """
@@ -199,7 +242,7 @@ class storage_manager(abstract_manager):
         row_sauce = recipe_row_model.create(sauce, brutto=90.0, netto=85.0)
         row_cheese = recipe_row_model.create(cheese, brutto=120.0, netto=115.0)
         row_basil = recipe_row_model.create(basil, brutto=5.0, netto=4.0)
-        row_box = recipe_row_model.create(box, brutto=1.0, netto=1.0)  # Тара по п. 3.3 ТЗ
+        row_box = recipe_row_model.create(box, brutto=1.0, netto=1.0)  
 
         # Собираем сам рецепт через фабричный метод recipe_model.create(...)
         pizza_recipe = recipe_model.create(

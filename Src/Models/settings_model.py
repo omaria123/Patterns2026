@@ -1,6 +1,7 @@
 from Src.Core.abstract_class import abstract_reference
 from Src.Models.organization_model import organization_model
 from Src.Core.exception import arguments_exception
+from Src.Dtos.report_type_enum import report_type_enum
 
 
 class settings_model(abstract_reference):
@@ -12,6 +13,7 @@ class settings_model(abstract_reference):
     __boss_name: str = ""
     __account_name: str = ""
     __is_first_start: bool = True
+    __response_format: report_type_enum = report_type_enum.MARKDOWN  
 
     @property
     def organization(self) -> organization_model:
@@ -68,3 +70,26 @@ class settings_model(abstract_reference):
         if not isinstance(value, bool):
             raise arguments_exception("Флаг первого старта должен быть bool")
         self.__is_first_start = value
+
+
+    @property
+    def response_format(self) -> report_type_enum:
+        """Геттер формата ответа по умолчанию."""
+        return self.__response_format
+
+    @response_format.setter
+    def response_format(self, value: report_type_enum | str) -> None:
+        """Сеттер формата ответа с валидацией."""
+        if isinstance(value, report_type_enum):
+            self.__response_format = value
+            return
+
+        if isinstance(value, str):
+            cleaned = value.strip().lower()
+            for item in report_type_enum:
+                if item.value == cleaned or item.name.lower() == cleaned:
+                    self.__response_format = item
+                    return
+            raise arguments_exception(f"Неподдерживаемый формат ответа: {value}", "response_format")
+
+        raise arguments_exception("Формат ответа должен быть строкой или report_type_enum", "response_format")
