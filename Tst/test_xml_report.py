@@ -34,11 +34,10 @@ def test_success_xml_report_build_recipe_text(sample_recipe):
     assert isinstance(result, report_result_dto)
     assert result.text != ""
     assert '<?xml version="1.0" encoding="UTF-8"?>' in result.text
-    assert '<recipe' in result.text
-    assert '<ingredients>' in result.text
+    assert '<report' in result.text
+    assert 'Мука' in result.text
     assert '<item' in result.text
-    assert '</recipe>' in result.text
-
+    assert '</report>' in result.text
 
 def test_throw_exception_xml_report_invalid_source():
     """Проверка ошибки при неверном источнике данных."""

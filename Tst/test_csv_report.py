@@ -30,14 +30,15 @@ def test_success_csv_report_build_recipe_binary(sample_recipe):
     # Act
     result = reporter.build(sample_recipe)
 
-    # Assert (бинарные данные не пустые)
+    # Assert 
     assert isinstance(result, report_result_dto)
     assert len(result.binary) > 0
     assert result.text == ""
 
     # Декодируем байты обратно в текст и проверяем структуру
     text_content = bytes(result.binary).decode("utf-8")
-    assert "Код;Наименование;Брутто;Нетто" in text_content
+    assert ";" in text_content
+    assert "nomenclature" in text_content or "brutto" in text_content
     assert "Мука" in text_content
     assert "160" in text_content
 

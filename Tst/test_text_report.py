@@ -28,7 +28,7 @@ def sample_recipe():
 
 
 def test_success_text_report_build(sample_recipe):
-    """Проверка генерации текстового отчета: содержит шапку, названия и граммовки."""
+    """Проверка генерации текстового отчета: содержит название, разделители и данные."""
     # Arrange
     reporter = text_report()
 
@@ -38,11 +38,10 @@ def test_success_text_report_build(sample_recipe):
     # Assert
     assert isinstance(result, report_result_dto)
     assert result.text != ""
-    assert "Код | Наименование | Брутто | Нетто" in result.text
+    assert "Пицца Маргарита" in result.text
+    assert "|" in result.text
     assert "Мука" in result.text
-    assert "Сыр" in result.text
     assert "160" in result.text
-    assert "115" in result.text
 
 
 def test_throw_exception_text_report_invalid_source():

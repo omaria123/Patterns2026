@@ -12,40 +12,23 @@ class html_report(abstract_report):
     """
 
     def build(self, source) -> report_result_dto:
-        result = report_result_dto()
+        if source is None:
+            raise arguments_exception("Источник данных не может быть None", "source")
+
+        title, headers, data_rows = self.get_report_data(source)
+
         html = ["<!DOCTYPE html><html><head><meta charset='utf-8'><title>Отчет</title></head><body>"]
+        html.append(f"<h2>{title}</h2>")
+        html.append("<table border='1' cellpadding='5' cellspacing='0'>")
+        html.append("<tr>" + "".join(f"<th>{h}</th>" for h in headers) + "</tr>")
 
-        if isinstance(source, recipe_model):
-            html.append(f"<h2>Технологическая карта: {source.name}</h2>")
-            html.append("<table border='1' cellpadding='5' cellspacing='0'>")
-            html.append("<tr><th>Код</th><th>Наименование</th><th>Брутто (г)</th><th>Нетто (г)</th></tr>")
-            for row in source.rows:
-                r_id = str(row.nomenclature.id)[:8] if row.nomenclature else ""
-                r_name = row.nomenclature.name if row.nomenclature else ""
-                html.append(f"<tr><td>{r_id}</td><td>{r_name}</td><td>{row.brutto}</td><td>{row.netto}</td></tr>")
-            html.append(f"<tr><th colspan='2'>ИТОГО</th><th>{source.brutto_weight}</th><th>{source.netto_weight}</th></tr>")
-            html.append("</table>")
+        for row in data_rows:
+            html.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>")
 
-        elif isinstance(source, nomenclature_model):
-            html.append(f"<h2>Номенклатура: {source.name}</h2>")
-            html.append("<table border='1' cellpadding='5'>")
-            html.append(f"<tr><td>ID</td><td>{source.id}</td></tr>")
-            html.append(f"<tr><td>Полное имя</td><td>{source.full_name}</td></tr>")
-            html.append(f"<tr><td>Группа</td><td>{source.group.name if source.group else '-'}</td></tr>")
-            html.append(f"<tr><td>Единица</td><td>{source.unit.name if source.unit else '-'}</td></tr>")
-            html.append("</table>")
+        html.append("</table></body></html>")
 
-        elif isinstance(source, range_model):
-            html.append(f"<h2>Единица измерения: {source.name}</h2>")
-            html.append("<table border='1' cellpadding='5'>")
-            html.append(f"<tr><td>ID</td><td>{source.id}</td></tr>")
-            html.append(f"<tr><td>Коэффициент</td><td>{source.conversion_factor}</td></tr>")
-            html.append(f"<tr><td>Базовая единица</td><td>{source.base_unit.name if source.base_unit else '-'}</td></tr>")
-            html.append("</table>")
-
-        else:
-            raise arguments_exception("Неподдерживаемый тип источника данных для отчета", "source")
-
-        html.append("</body></html>")
+        result = report_result_dto()
         result.text = "".join(html)
+        result.mimetype = "text/html"
+        result.as_attachment = False
         return result

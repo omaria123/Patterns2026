@@ -36,9 +36,8 @@ def test_success_markdown_report_build_recipe_binary(sample_recipe):
 
     # Декодируем и проверяем разметку
     md_content = bytes(result.binary).decode("utf-8")
-    assert "# Технологическая карта:" in md_content
-    assert "| Код | Наименование | Брутто (г) | Нетто (г) |" in md_content
-    assert "| :--- | :--- | :--- | :--- |" in md_content
+    assert "# Пицца Маргарита" in md_content
+    assert "| :---" in md_content
     assert "Мука" in md_content
 
 

@@ -24,55 +24,16 @@ def init_app():
 init_app()
 
 
-def _find_entity(entity_type: str, entity_id: str):
+def _format_http_response(result_dto: report_result_dto):
     """
-    Поиск сущности в хранилище по типу и коду (ID).
+    Формирование HTTP-ответа (скачивание для CSV/Markdown, текст для остальных).
+    Метаданные инкапсулированы в DTO.
     """
-    storage = storage_manager()
-    cleaned_type = entity_type.strip().lower()
-    target_id = entity_id.strip()
+    headers = {}
+    if result_dto.as_attachment:
+        headers["Content-Disposition"] = f"attachment; filename={result_dto.file_name}"
 
-    collection = {}
-    if cleaned_type in ("recipe", "рецепт"):
-        collection = storage.recipes
-    elif cleaned_type in ("nomenclature", "номенклатура"):
-        collection = storage.nomenclature
-    elif cleaned_type in ("unit", "единица", "range"):
-        collection = storage.units
-    else:
-        return None, f"Неизвестный тип сущности: '{entity_type}'. Допустимые: recipe, nomenclature, unit"
-
-    # Ищем по совпадению ID 
-    for item_id, item in collection.items():
-        if str(item_id) == target_id:
-            return item, None
-
-    return None, f"Сущность типа '{entity_type}' с кодом '{entity_id}' не найдена"
-
-
-def _format_http_response(result_dto: report_result_dto, format_enum: report_type_enum, filename_base: str):
-    """Формирование HTTP-ответа (Пункт 7 ТЗ: скачивание для CSV/Markdown, текст для остальных)."""
-    if format_enum == report_type_enum.CSV:
-        return Response(
-            bytes(result_dto.binary),
-            mimetype="text/csv; charset=utf-8",
-            headers={"Content-Disposition": f"attachment; filename={filename_base}.csv"}
-        )
-
-    if format_enum == report_type_enum.MARKDOWN:
-        return Response(
-            bytes(result_dto.binary),
-            mimetype="text/markdown; charset=utf-8",
-            headers={"Content-Disposition": f"attachment; filename={filename_base}.md"}
-        )
-
-    if format_enum == report_type_enum.XML:
-        return Response(result_dto.text, mimetype="application/xml; charset=utf-8")
-
-    if format_enum == report_type_enum.HTML:
-        return Response(result_dto.text, mimetype="text/html; charset=utf-8")
-
-    return Response(result_dto.text, mimetype="text/plain; charset=utf-8")
+    return Response(result_dto.data, mimetype=result_dto.mimetype, headers=headers)
 
 
 # Список объектов и их кодов (ID) 
@@ -80,21 +41,13 @@ def _format_http_response(result_dto: report_result_dto, format_enum: report_typ
 def list_entities(entity_type: str):
     """Выводит список всех доступных сущностей с их кодами."""
     storage = storage_manager()
-    cleaned_type = entity_type.strip().lower()
-
-    collection = {}
-    if cleaned_type in ("recipe", "рецепт"):
-        collection = storage.recipes
-    elif cleaned_type in ("nomenclature", "номенклатура"):
-        collection = storage.nomenclature
-    elif cleaned_type in ("unit", "единица", "range"):
-        collection = storage.units
-    else:
-        return f"Неизвестный тип: {entity_type}", 400
+    items = storage.list_items(entity_type)
+    if not items:
+        return f"Сущности типа '{entity_type}' не найдены", 404
 
     lines = [f"Список сущностей типа '{entity_type}' (Код -> Наименование):"]
-    for item_id, item in collection.items():
-        lines.append(f"{item_id} -> {item.name}")
+    for item in items:
+        lines.append(f"{item.id} -> {item.name}")
 
     return Response("\n".join(lines), mimetype="text/plain; charset=utf-8")
 
@@ -102,9 +55,12 @@ def list_entities(entity_type: str):
 # С явным указанием формата и кода сущности 
 @app.route("/api/report/<format_type>/<entity_type>/<entity_id>", methods=["GET"])
 def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
-    entity, error = _find_entity(entity_type, entity_id)
-    if error:
-        return error, 404
+    storage = storage_manager()
+
+    # Поиск делегирован в storage_manager 
+    entity = storage.get(entity_type, entity_id)
+    if not entity:
+        return f"Сущность типа '{entity_type}' с кодом '{entity_id}' не найдена", 404
 
     format_enum = None
     cleaned_format = format_type.strip().lower()
@@ -118,22 +74,23 @@ def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
     factory = report_factory()
     report = factory.create(format_enum)
     result_dto = report.build(entity)
-    return _format_http_response(result_dto, format_enum, f"report_{entity_type}")
+    return _format_http_response(result_dto)
 
 
 # По умолчанию из настроек (create_default) по коду сущности
 @app.route("/api/report/<entity_type>/<entity_id>", methods=["GET"])
 def get_report_default(entity_type: str, entity_id: str):
-    entity, error = _find_entity(entity_type, entity_id)
-    if error:
-        return error, 404
+    storage = storage_manager()
+
+    # Поиск делегирован в storage_manager
+    entity = storage.get(entity_type, entity_id)
+    if not entity:
+        return f"Сущность типа '{entity_type}' с кодом '{entity_id}' не найдена", 404
 
     factory = report_factory()
     report = factory.create_default()
     result_dto = report.build(entity)
-    default_format = getattr(factory.settings, "response_format", report_type_enum.MARKDOWN)
-
-    return _format_http_response(result_dto, default_format, f"report_default_{entity_type}")
+    return _format_http_response(result_dto)
 
 
 if __name__ == "__main__":
