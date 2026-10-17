@@ -199,7 +199,7 @@ class storage_manager(abstract_manager):
         row_sauce = recipe_row_model.create(sauce, brutto=90.0, netto=85.0)
         row_cheese = recipe_row_model.create(cheese, brutto=120.0, netto=115.0)
         row_basil = recipe_row_model.create(basil, brutto=5.0, netto=4.0)
-        row_box = recipe_row_model.create(box, brutto=1.0, netto=1.0)  # Тара по п. 3.3 ТЗ
+        row_box = recipe_row_model.create(box, brutto=1.0, netto=1.0)  
 
         # Собираем сам рецепт через фабричный метод recipe_model.create(...)
         pizza_recipe = recipe_model.create(

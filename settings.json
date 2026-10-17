@@ -2,6 +2,7 @@
   "boss_name": "Иванов Иван Иванович",
   "account_name": "Основной расчетный счет",
   "is_first_start": true,
+  "response_format": "markdown",
   "organization": {
     "name": "ООО Ромашка",
     "inn": "1234567890",

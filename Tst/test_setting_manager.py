@@ -2,6 +2,7 @@ import pytest
 from Src.Logics.settings_manager import settings_manager
 from Src.Models.settings_model import settings_model
 from Src.Core.exception import arguments_exception
+from Src.Dtos.report_type_enum import report_type_enum
 
 
 def test_not_raise_settings_manager_load():
@@ -110,3 +111,32 @@ def test_throw_exception_settings_manager_invalid_filename_type():
     # Act & Assert
     with pytest.raises(arguments_exception):
         manager.load(invalid_type_name)
+
+def test_success_settings_model_response_format():
+    """Проверка установки валидного формата ответа (строкой и enum)."""
+    # Arrange
+    settings = settings_model()
+
+    # Act 1: передали строкой
+    settings.response_format = "markdown"
+    # Assert 1
+    assert settings.response_format == report_type_enum.MARKDOWN
+
+    # Act 2: передали через enum
+    settings.response_format = report_type_enum.CSV
+    # Assert 2
+    assert settings.response_format == report_type_enum.CSV
+
+
+def test_throw_exception_settings_model_invalid_response_format():
+    """Проверка ошибки при передаче неподдерживаемого формата ответа."""
+    # Arrange
+    settings = settings_model()
+
+    # Act & Assert (неизвестный формат)
+    with pytest.raises(arguments_exception):
+        settings.response_format = "unsupported_format_xyz"
+
+    # Act & Assert (неверный тип - число)
+    with pytest.raises(arguments_exception):
+        settings.response_format = 12345

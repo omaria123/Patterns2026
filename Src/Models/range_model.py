@@ -82,7 +82,7 @@ class range_model(abstract_reference):
         gram.name = "грамм"
         gram.conversion_factor = 1  # Базовый коэффициент всегда 1
 
-        # Создание производной единицы измерения 
+        # Создание производной единицы измерения
         result = range_model()
         result.name = "килограмм"
         result.conversion_factor = 1000
