@@ -15,10 +15,10 @@ class text_report(abstract_report):
         if source is None:
             raise arguments_exception("Источник данных не может быть None", "source")
 
-        title, headers, data_rows = self.get_report_data(source)
+        data = self.get_report_data(source)
 
-        lines = [f"{title}\n", " | ".join(headers), "-" * 50]
-        for row in data_rows:
+        lines = [f"{data.title}\n", " | ".join(data.headers), "-" * 50]
+        for row in data.rows:
             lines.append(" | ".join(str(cell) for cell in row))
 
         result = report_result_dto()

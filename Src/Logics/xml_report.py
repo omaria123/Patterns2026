@@ -15,15 +15,15 @@ class xml_report(abstract_report):
         if source is None:
             raise arguments_exception("Источник данных не может быть None", "source")
 
-        title, headers, data_rows = self.get_report_data(source)
+        data = self.get_report_data(source)
 
         lines = ['<?xml version="1.0" encoding="UTF-8"?>']
-        lines.append(f'<report title="{title}">')
+        lines.append(f'<report title="{data.title}">')
         lines.append('  <items>')
 
-        for row in data_rows:
+        for row in data.rows:
             lines.append('    <item>')
-            for h, cell in zip(headers, row):
+            for h, cell in zip(data.headers, row):
                 tag = str(h).strip().lower().replace(" ", "_")
                 lines.append(f'      <{tag}>{cell}</{tag}>')
             lines.append('    </item>')

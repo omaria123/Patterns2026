@@ -16,13 +16,13 @@ class markdown_report(abstract_report):
         if source is None:
             raise arguments_exception("Источник данных не может быть None", "source")
 
-        title, headers, data_rows = self.get_report_data(source)
+        data = self.get_report_data(source)
 
-        lines = [f"# {title}\n"]
-        lines.append("| " + " | ".join(headers) + " |")
-        lines.append("| " + " | ".join([":---"] * len(headers)) + " |")
+        lines = [f"# {data.title}\n"]
+        lines.append("| " + " | ".join(data.headers) + " |")
+        lines.append("| " + " | ".join([":---"] * len(data.headers)) + " |")
 
-        for row in data_rows:
+        for row in data.rows:
             lines.append("| " + " | ".join(str(cell) for cell in row) + " |")
 
         result = report_result_dto()

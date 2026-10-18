@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
+from Src.Dtos.report_data_dto import report_data_dto
 
 
 class abstract_report(ABC):
@@ -70,7 +71,7 @@ class abstract_report(ABC):
                     total_row.append("")
 
             data_rows.append(total_row)
-            return title, headers, data_rows
+            return report_data_dto(title=title, headers=headers, rows=data_rows)
 
         # 2. Для одиночной карточки (номенклатура, склад, единица измерения...)
         headers = ["Свойство", "Значение"]
@@ -81,4 +82,4 @@ class abstract_report(ABC):
             val = getattr(source, prop, "")
             data_rows.append([prop, self._format_cell_value(val)])
 
-        return title, headers, data_rows
+        return report_data_dto(title=title, headers=headers, rows=data_rows)

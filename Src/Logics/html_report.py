@@ -15,14 +15,14 @@ class html_report(abstract_report):
         if source is None:
             raise arguments_exception("Источник данных не может быть None", "source")
 
-        title, headers, data_rows = self.get_report_data(source)
+        data = self.get_report_data(source)
 
         html = ["<!DOCTYPE html><html><head><meta charset='utf-8'><title>Отчет</title></head><body>"]
-        html.append(f"<h2>{title}</h2>")
+        html.append(f"<h2>{data.title}</h2>")
         html.append("<table border='1' cellpadding='5' cellspacing='0'>")
-        html.append("<tr>" + "".join(f"<th>{h}</th>" for h in headers) + "</tr>")
+        html.append("<tr>" + "".join(f"<th>{h}</th>" for h in data.headers) + "</tr>")
 
-        for row in data_rows:
+        for row in data.rows:
             html.append("<tr>" + "".join(f"<td>{cell}</td>" for cell in row) + "</tr>")
 
         html.append("</table></body></html>")

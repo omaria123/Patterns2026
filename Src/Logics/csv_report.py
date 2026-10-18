@@ -16,10 +16,10 @@ class csv_report(abstract_report):
         if source is None:
             raise arguments_exception("Источник данных не может быть None", "source")
 
-        title, headers, data_rows = self.get_report_data(source)
+        data = self.get_report_data(source)
 
-        lines = [";".join(headers)]
-        for row in data_rows:
+        lines = [";".join(data.headers)]
+        for row in data.rows:
             formatted_row = [str(cell).replace(".", ",") for cell in row]
             lines.append(";".join(formatted_row))
 
