@@ -3,52 +3,63 @@ from typing import Any
 from uuid import UUID
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
+from Src.Core.abstract_convertor import abstract_convertor
+from Src.Core.abstract_factory import abstract_factory
 from Src.Logics.basic_convertor import basic_convertor
 from Src.Logics.datetime_convertor import datetime_convertor
 from Src.Logics.reference_convertor import reference_convertor
 
 
-class convert_factory:
+class convert_factory(abstract_factory):
     """
-    Фабрика конвертации произвольных объектов в структуры словарей (dict).
-    Координирует работу специализированных конверторов (basic, datetime, reference)
-    и управляет рекурсивным обходом вложенных моделей и списков.
+    Фабрика конверторов.
+    Подбирает подходящий конвертор на основе внутреннего словаря сопоставления типов.
     """
 
     def __init__(self) -> None:
         """
         Инициализатор фабрики конверторов.
-        Создает экземпляры базовых конверторов и связывает их.
+        Формирует реестр сопоставления типов и специализированных конверторов.
         """
         self._basic = basic_convertor()
         self._datetime = datetime_convertor()
         self._reference = reference_convertor(factory=self)
 
-    @property
-    def basic(self) -> basic_convertor:
-        """Геттер конвертора базовых типов."""
-        return self._basic
+        # Реестр сопоставления типов 
+        self.__mapping: dict[type, abstract_convertor] = {
+            type(None): self._basic,
+            str: self._basic,
+            int: self._basic,
+            float: self._basic,
+            bool: self._basic,
+            UUID: self._basic,
+            datetime: self._datetime,
+            date: self._datetime,
+            abstract_reference: self._reference,
+        }
 
     @property
-    def datetime(self) -> datetime_convertor:
-        """Геттер конвертора даты и времени."""
-        return self._datetime
+    def mapping(self) -> dict[type, abstract_convertor]:
+        """Словарь сопоставления типов и конверторов."""
+        return self.__mapping
 
-    @property
-    def reference(self) -> reference_convertor:
-        """Геттер конвертора ссылочных типов."""
-        return self._reference
+    def create(self, obj: Any) -> abstract_convertor:
+        """Выбрать нужный конвертор для объекта."""
+        if obj is None:
+            return self.__mapping[type(None)]
 
-    def _get_properties(self, obj: Any) -> list[str]:
-        """
-        Вспомогательный метод: извлекает имена всех публичных @property объекта.
-        """
-        props = []
-        for cls in type(obj).__mro__:
-            for name, attr in cls.__dict__.items():
-                if isinstance(attr, property) and not name.startswith("_") and name not in props:
-                    props.append(name)
-        return props
+        target_type = type(obj) if not isinstance(obj, type) else obj
+
+        # Прямой поиск в словаре
+        if target_type in self.__mapping:
+            return self.__mapping[target_type]
+
+        for cls in target_type.__mro__:
+            if cls in self.__mapping:
+                return self.__mapping[cls]
+
+        raise arguments_exception(f"Для типа '{target_type.__name__}' конвертор не найден!", "obj")
+
 
     def convert(self, obj: Any, visited: set | None = None) -> Any:
         """
@@ -61,61 +72,10 @@ class convert_factory:
         if isinstance(obj, list):
             return [self.convert(item, visited=visited) for item in obj]
 
-        # Если подан простой тип
-        if isinstance(obj, (str, int, float, bool, UUID)):
-            res = self._basic.convert("value", obj)
-            return res["value"]
-
-        # Если подана дата/время
-        if isinstance(obj, (datetime, date)):
-            res = self._datetime.convert("value", obj)
-            return res["value"]
-
-        # Если подана доменная сущность (abstract_reference)
-        if isinstance(obj, abstract_reference):
-            if visited is None:
-                visited = set()
-
-            obj_id = str(obj.id)
-            if obj_id in visited:
-                # Прерывание бесконечного цикла рекурсии
-                return None
-
-            current_visited = set(visited)
-            current_visited.add(obj_id)
-
-            result_dict = {}
-            properties = self._get_properties(obj)
-
-            for prop_name in properties:
-                prop_value = getattr(obj, prop_name, None)
-
-                # Диспетчеризация поля по его типу:
-                if prop_value is None:
-                    result_dict[prop_name] = None
-                elif isinstance(prop_value, list):
-                    result_dict[prop_name] = [self.convert(x, visited=current_visited) for x in prop_value]
-                elif isinstance(prop_value, abstract_reference):
-                    # Проверяем на прямое зацикливание 
-                    if prop_value is obj or str(prop_value.id) in current_visited:
-                        result_dict[prop_name] = None
-                    else:
-                        converted_ref = self._reference.convert(prop_name, prop_value, visited=current_visited)
-                        result_dict[prop_name] = converted_ref[prop_name]
-                elif isinstance(prop_value, (datetime, date)):
-                    converted_dt = self._datetime.convert(prop_name, prop_value)
-                    result_dict[prop_name] = converted_dt[prop_name]
-                elif isinstance(prop_value, (str, int, float, bool, UUID)):
-                    converted_basic = self._basic.convert(prop_name, prop_value)
-                    result_dict[prop_name] = converted_basic[prop_name]
-                else:
-                    # Резервный вариант для прочих вложенных объектов
-                    result_dict[prop_name] = self.convert(prop_value, visited=current_visited)
-
-            return result_dict
-
         # Если передан обычный словарь — рекурсивно обрабатываем значения
         if isinstance(obj, dict):
             return {k: self.convert(v, visited=visited) for k, v in obj.items()}
 
-        raise arguments_exception(f"Не удалось сериализовать объект типа '{type(obj).__name__}'", "obj")
+        convertor = self.create(obj)
+        result = convertor.convert("", obj, visited=visited)
+        return result.get("", result)

@@ -9,7 +9,7 @@ class abstract_convertor(ABC):
     """
 
     @abstractmethod
-    def convert(self, field: str, obj: Any) -> dict:
+    def convert(self, field: str, obj: Any, visited: set | None = None) -> dict:
         """
         Преобразовать переданный объект в словарь.
         """

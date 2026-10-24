@@ -10,12 +10,12 @@ class basic_convertor(abstract_convertor):
     Формирует словарь вида {field: value}.
     """
 
-    def convert(self, field: str, obj: Any) -> dict:
+    def convert(self, field: str, obj: Any, visited: set | None = None) -> dict:
         """
         Преобразует базовое значение или UUID в пару ключ-значение словаря.
         """
         # Валидация имени поля
-        if not isinstance(field, str) or not field.strip():
+        if not isinstance(field, str) or (field != "" and not field.strip()):
             raise arguments_exception("Наименование поля должно быть непустой строкой", "field")
 
         # Проверка допустимости типа данных

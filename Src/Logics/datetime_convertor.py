@@ -10,13 +10,13 @@ class datetime_convertor(abstract_convertor):
     Преобразует дату/время в строковый формат ISO.
     """
 
-    def convert(self, field: str, obj: Any) -> dict:
+    def convert(self, field: str, obj: Any, visited: set | None = None) -> dict:
         """
         Преобразует объект datetime или date в ISO-строку.
         """
 
         # Валидация имени поля
-        if not isinstance(field, str) or not field.strip():
+        if not isinstance(field, str) or (field != "" and not field.strip()):
             raise arguments_exception("Наименование поля должно быть непустой строкой", "field")
 
         # Валидация типа значения
@@ -26,6 +26,4 @@ class datetime_convertor(abstract_convertor):
                 "obj"
             )
 
-        # Преобразование в ISO-строку
-        formatted_value = obj.isoformat()
-        return {field.strip(): formatted_value}
+        return {field.strip(): obj.isoformat()}
