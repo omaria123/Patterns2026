@@ -1,0 +1,152 @@
+[
+  {
+    "full_name": "Мука пшеничная в/с для пиццы",
+    "group": {
+      "id": "c0b2bc26-7288-4a9b-97c0-9592d5c5b8d5",
+      "name": "Бакалея"
+    },
+    "unit": {
+      "conversion_factor": 1000,
+      "base_unit": {
+        "conversion_factor": 1,
+        "base_unit": null,
+        "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+        "name": "грамм"
+      },
+      "id": "5ff50a29-991a-473d-a277-e7e8037b68de",
+      "name": "килограмм"
+    },
+    "id": "2e8a98c6-3eba-4bec-9d7f-79be33666cde",
+    "name": "Мука пшеничная"
+  },
+  {
+    "full_name": "Дрожжи хлебопекарные сухие быстродействующие",
+    "group": {
+      "id": "c0b2bc26-7288-4a9b-97c0-9592d5c5b8d5",
+      "name": "Бакалея"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+      "name": "грамм"
+    },
+    "id": "75223fbf-b130-4e30-a6b1-46fe907e628b",
+    "name": "Дрожжи сухие"
+  },
+  {
+    "full_name": "Масло оливковое первого отжима Extra Virgin",
+    "group": {
+      "id": "c0b2bc26-7288-4a9b-97c0-9592d5c5b8d5",
+      "name": "Бакалея"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "a379352c-7b03-41c4-8106-50556ba06ef9",
+      "name": "миллилитр"
+    },
+    "id": "d055165c-c839-46ea-93c2-d548e2975439",
+    "name": "Масло оливковое"
+  },
+  {
+    "full_name": "Соль поваренная пищевая экстра",
+    "group": {
+      "id": "c0b2bc26-7288-4a9b-97c0-9592d5c5b8d5",
+      "name": "Бакалея"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+      "name": "грамм"
+    },
+    "id": "19b5f5e7-7fd1-4eec-96ce-57297da142b5",
+    "name": "Соль"
+  },
+  {
+    "full_name": "Сыр полутвердый Моцарелла 45%",
+    "group": {
+      "id": "43df2610-3e7a-40f4-8bdd-9b04136be8cc",
+      "name": "Молочная продукция"
+    },
+    "unit": {
+      "conversion_factor": 1000,
+      "base_unit": {
+        "conversion_factor": 1,
+        "base_unit": null,
+        "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+        "name": "грамм"
+      },
+      "id": "5ff50a29-991a-473d-a277-e7e8037b68de",
+      "name": "килограмм"
+    },
+    "id": "7f42f8b9-0ff4-42f8-85a4-adca69868e4e",
+    "name": "Сыр Моцарелла"
+  },
+  {
+    "full_name": "Соус томатный натуральный для пиццы",
+    "group": {
+      "id": "2686d880-bdeb-4107-8c66-f7c096e99c55",
+      "name": "Соусы"
+    },
+    "unit": {
+      "conversion_factor": 1000,
+      "base_unit": {
+        "conversion_factor": 1,
+        "base_unit": null,
+        "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+        "name": "грамм"
+      },
+      "id": "5ff50a29-991a-473d-a277-e7e8037b68de",
+      "name": "килограмм"
+    },
+    "id": "117f7b1e-c7fe-4a63-a361-ba6718d4f3a7",
+    "name": "Томатный соус"
+  },
+  {
+    "full_name": "Базилик зеленый свежий листовой",
+    "group": {
+      "id": "bdc02fac-6d45-4b31-ae2e-169a180f7bb9",
+      "name": "Овощи и зелень"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "b6df06a0-f620-43cb-9d64-986d09ecddb2",
+      "name": "грамм"
+    },
+    "id": "166441cc-49ee-4680-9bcc-97f9bb271c8b",
+    "name": "Базилик свежий"
+  },
+  {
+    "full_name": "Пицца Маргарита классическая 30 см",
+    "group": {
+      "id": "1c217ca5-4762-4ecb-bd27-f607d301be2e",
+      "name": "Готовые блюда"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "449d9c46-f01b-4960-8420-981013c5843e",
+      "name": "штука"
+    },
+    "id": "c5f32204-8cb0-4f04-a809-0058fae78b4c",
+    "name": "Пицца Маргарита"
+  },
+  {
+    "full_name": "Коробка картонная под пиццу 30х30 см",
+    "group": {
+      "id": "bc1250ad-6218-416b-a28a-659b057ad714",
+      "name": "Упаковка"
+    },
+    "unit": {
+      "conversion_factor": 1,
+      "base_unit": null,
+      "id": "449d9c46-f01b-4960-8420-981013c5843e",
+      "name": "штука"
+    },
+    "id": "6714a633-ec45-42ff-941b-40f326b6ec1d",
+    "name": "Коробка для пиццы"
+  }
+]
