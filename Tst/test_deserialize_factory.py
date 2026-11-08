@@ -11,7 +11,7 @@ from Src.Models.range_model import range_model
 from Src.Models.warehouse_model import warehouse_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.recipe_model import recipe_model
-
+from Src.Logics.convert_factory import convert_factory
 
 def test_success_deserialize_flat_group_model():
     """Проверка десериализации плоской модели группы номенклатуры."""
@@ -19,6 +19,7 @@ def test_success_deserialize_flat_group_model():
     factory = deserialize_factory()
     test_id = uuid4()
     data = {
+        "type": "Src.Models.group_model.group_model",
         "id": str(test_id),
         "name": "Бакалея"
     }
@@ -30,6 +31,7 @@ def test_success_deserialize_flat_group_model():
     assert isinstance(group, group_model)
     assert group.id == test_id
     assert group.name == "Бакалея"
+    assert group.type == "Src.Models.group_model.group_model"
 
 
 def test_success_deserialize_warehouse_model():
@@ -38,13 +40,14 @@ def test_success_deserialize_warehouse_model():
     factory = deserialize_factory()
     test_id = uuid4()
     data = {
+        "type": "Src.Models.warehouse_model.warehouse_model",
         "id": str(test_id),
         "name": "Центральный склад цеха",
         "address": "г. Москва, ул. Производственная, д. 5"
     }
 
     # Act
-    wh = factory.deserialize(data, warehouse_model)
+    wh = factory.deserialize(data)
 
     # Assert
     assert isinstance(wh, warehouse_model)
@@ -59,6 +62,7 @@ def test_success_deserialize_self_referencing_unit():
     factory = deserialize_factory()
     test_id = uuid4()
     data = {
+        "type": "Src.Models.range_model.range_model",
         "id": str(test_id),
         "name": "грамм",
         "conversion_factor": 1,
@@ -66,7 +70,7 @@ def test_success_deserialize_self_referencing_unit():
     }
 
     # Act
-    unit = factory.deserialize(data, range_model)
+    unit = factory.deserialize(data)
 
     # Assert
     assert isinstance(unit, range_model)
@@ -81,12 +85,12 @@ def test_success_deserialize_cache_prevents_duplication():
     # Arrange
     factory = deserialize_factory()
     shared_id = str(uuid4())
-    data1 = {"id": shared_id, "name": "Бакалея"}
-    data2 = {"id": shared_id, "name": "Бакалея"}
+    data1 = {"type": "Src.Models.group_model.group_model", "id": shared_id, "name": "Бакалея"}
+    data2 = {"type": "Src.Models.group_model.group_model", "id": shared_id, "name": "Бакалея"}
 
     # Act
-    obj1 = factory.deserialize(data1, group_model)
-    obj2 = factory.deserialize(data2, group_model)
+    obj1 = factory.deserialize(data1)
+    obj2 = factory.deserialize(data2)
 
     # Assert
     assert obj1 is obj2
@@ -97,7 +101,6 @@ def test_success_deserialize_and_compare_with_storage_manager():
     Десериализация реальных JSON-файлов
     и сравнение с данными storage_manager.
     """
-    from Src.Logics.convert_factory import convert_factory
 
     # Arrange: загружаем хранилище
     sm = settings_manager()
@@ -108,24 +111,12 @@ def test_success_deserialize_and_compare_with_storage_manager():
     if not storage.is_loaded:
         storage.convert(sm.settings)
 
-    # Синхронизируем файлы Json/ с актуальными ID текущей сессии хранилища
     c_factory = convert_factory()
-    collections = {
-        "warehouses.json": list(storage.warehouses.values()),
-        "units.json": list(storage.units.values()),
-        "nomenclature.json": list(storage.nomenclature.values()),
-        "recipes.json": list(storage.recipes.values()),
-    }
-    for file_name, items in collections.items():
-        with open(f"Json/{file_name}", "w", encoding="utf-8") as f:
-            json.dump(c_factory.convert(items), f, ensure_ascii=False, indent=2)
-
-    factory = deserialize_factory()
+    d_factory = deserialize_factory(storage=storage)
 
     # 1. Проверяем склады
-    with open("Json/warehouses.json", "r", encoding="utf-8") as f:
-        wh_data = json.load(f)
-    deserialized_warehouses = factory.deserialize(wh_data, "warehouse")
+    wh_json = c_factory.convert(list(storage.warehouses.values()))
+    deserialized_warehouses = d_factory.deserialize(wh_json)
 
     assert len(deserialized_warehouses) == len(storage.warehouses)
     for wh in deserialized_warehouses:
@@ -133,11 +124,11 @@ def test_success_deserialize_and_compare_with_storage_manager():
         assert wh.id == original.id
         assert wh.name == original.name
         assert wh.address == original.address
+        assert wh.type == original.type
 
     # 2. Проверяем единицы измерения
-    with open("Json/units.json", "r", encoding="utf-8") as f:
-        units_data = json.load(f)
-    deserialized_units = factory.deserialize(units_data, "range")
+    units_json = c_factory.convert(list(storage.units.values()))
+    deserialized_units = d_factory.deserialize(units_json)
 
     assert len(deserialized_units) == len(storage.units)
     for u in deserialized_units:
@@ -148,9 +139,8 @@ def test_success_deserialize_and_compare_with_storage_manager():
         assert u.base_unit.name == original.base_unit.name
 
     # 3. Проверяем номенклатуру
-    with open("Json/nomenclature.json", "r", encoding="utf-8") as f:
-        nom_data = json.load(f)
-    deserialized_nomenclature = factory.deserialize(nom_data, "nomenclature")
+    nom_json = c_factory.convert(list(storage.nomenclature.values()))
+    deserialized_nomenclature = d_factory.deserialize(nom_json)
 
     assert len(deserialized_nomenclature) == len(storage.nomenclature)
     for item in deserialized_nomenclature:
@@ -162,9 +152,8 @@ def test_success_deserialize_and_compare_with_storage_manager():
         assert item.unit.name == original.unit.name
 
     # 4. Проверяем рецепты
-    with open("Json/recipes.json", "r", encoding="utf-8") as f:
-        recipe_data = json.load(f)
-    deserialized_recipes = factory.deserialize(recipe_data, "recipe")
+    recipe_json = c_factory.convert(list(storage.recipes.values()))
+    deserialized_recipes = d_factory.deserialize(recipe_json)
 
     assert len(deserialized_recipes) == len(storage.recipes)
     for r in deserialized_recipes:
@@ -183,4 +172,4 @@ def test_throw_exception_deserialize_unknown_type():
 
     # Act & Assert
     with pytest.raises(arguments_exception):
-        factory.deserialize({"unknown_field": 123}, "неизвестный_тип")
+        factory.deserialize({"type": "Invalid.Unknown.Model", "name": "Тест"})

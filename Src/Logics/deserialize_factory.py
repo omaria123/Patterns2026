@@ -1,10 +1,12 @@
 from typing import Any
 from uuid import UUID
+import importlib
+import json
 
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.abstract_deserialize_factory import abstract_deserialize_factory
 from Src.Core.exception import arguments_exception
-import json
+from Src.Logics.storage_manager import storage_manager
 
 class deserialize_factory(abstract_deserialize_factory):
     """
@@ -12,62 +14,81 @@ class deserialize_factory(abstract_deserialize_factory):
     Автоматически определяет тип модели по структуре данных и предотвращает дублирование через Cache.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, storage: storage_manager = None) -> None:
         """Инициализатор фабрики. Подготавливает кеш объектов."""
-        self._cache: dict[UUID, abstract_reference] = {}
+        self._storage = storage if storage is not None else storage_manager()
+        self._local_cache: dict[UUID, abstract_reference] = {}
+
+    @property
+    def storage(self) -> storage_manager:
+        """Ссылка на инкапсулированное хранилище."""
+        return self._storage
 
     @property
     def cache(self) -> dict[UUID, abstract_reference]:
-        """Кеш созданных объектов для предотвращения дублирования в памяти."""
-        return self._cache
+        """Кеш объектов: объединяет данные storage_manager и локально созданные сущности."""
+        result = dict(self._local_cache)
+        if hasattr(self._storage, "data") and isinstance(self._storage.data, dict):
+            for collection in self._storage.data.values():
+                if isinstance(collection, dict):
+                    for k, v in collection.items():
+                        uid = UUID(str(k)) if not isinstance(k, UUID) else k
+                        result[uid] = v
+        return result
 
     def clear_cache(self) -> None:
         """Очистить кеш объектов."""
-        self._cache.clear()
+        self._local_cache.clear()
 
-    def _get_all_domain_models(self) -> list[type]:
-        """Автоматический поиск всех наследников abstract_reference."""
-        models = []
+    def _find_in_cache(self, obj_id: UUID) -> abstract_reference | None:
+        """Поиск объекта в инкапсулированном кеше storage_manager и локальном."""
+        if obj_id in self._local_cache:
+            return self._local_cache[obj_id]
 
-        def _collect(base_cls):
-            for sub in base_cls.__subclasses__():
-                models.append(sub)
-                _collect(sub)
+        if hasattr(self._storage, "data") and isinstance(self._storage.data, dict):
+            for collection in self._storage.data.values():
+                if isinstance(collection, dict):
+                    if obj_id in collection:
+                        return collection[obj_id]
+                    if str(obj_id) in collection:
+                        return collection[str(obj_id)]
+        return None
 
-        _collect(abstract_reference)
-        return models
+    def _save_to_cache(self, obj_id: UUID, instance: abstract_reference) -> None:
+        """Сохранение объекта в локальный кеш и в хранилище storage_manager."""
+        self._local_cache[obj_id] = instance
+        if hasattr(self._storage, "add"):
+            try:
+                self._storage.add(instance)
+            except Exception:
+                pass
 
-    def _get_model_properties(self, cls: type) -> set[str]:
-        """Динамически извлекает имена всех публичных @property и методов добавления."""
-        props = set()
-        for parent in cls.__mro__:
-            for name, attr in parent.__dict__.items():
-                if isinstance(attr, property) and not name.startswith("_"):
-                    props.add(name)
-                # Учитываем методы добавления коллекций 
-                if name.startswith("add_") and callable(attr):
-                    props.add(name.replace("add_", "") + "s")
-        return props
+    def _resolve_model_class(self, type_str: str) -> type:
+        """Определяет класс модели по его полному имени из поля 'type'."""
+        if "." in type_str:
+            module_name, class_name = type_str.rsplit(".", 1)
+            try:
+                module = importlib.import_module(module_name)
+                cls = getattr(module, class_name)
+                if isinstance(cls, type) and issubclass(cls, abstract_reference):
+                    return cls
+            except (ImportError, AttributeError):
+                pass
 
-    def determine_type(self, data: dict) -> type:
-        """
-        Автоматически определяет класс модели по набору ключей словаря.
-        """
-        data_keys = set(data.keys()) - {"id"}
-        models = self._get_all_domain_models()
+        def _get_subclasses(cls):
+            subs = []
+            for s in cls.__subclasses__():
+                subs.append(s)
+                subs.extend(_get_subclasses(s))
+            return subs
 
-        candidates = [
-            cls for cls in models
-            if data_keys.issubset(self._get_model_properties(cls))
-        ]
+        for cls in _get_subclasses(abstract_reference):
+            if cls.__name__ == type_str or f"{cls.__module__}.{cls.__qualname__}" == type_str:
+                return cls
 
-        if not candidates:
-            raise arguments_exception(
-                f"Не удалось определить доменную модель для полей: {list(data.keys())}", "data"
-            )
+        raise arguments_exception(f"Не удалось найти класс модели для типа '{type_str}'", "type")
 
-        return min(candidates, key=lambda cls: len(self._get_model_properties(cls) - data_keys))
-
+    
     def _is_read_only_property(self, instance: Any, prop_name: str) -> bool:
         """Проверяет, является ли свойство read-only."""
         prop = getattr(type(instance), prop_name, None)
@@ -91,38 +112,36 @@ class deserialize_factory(abstract_deserialize_factory):
         if not isinstance(data, dict):
             return data
 
-        # Определение класса: если тип передан явно - берем его, иначе определяем по данным
-        if isinstance(target_type, type) and issubclass(target_type, abstract_reference):
+        # Определение класса: берем из поля 'type' или из target_type
+        if "type" in data and isinstance(data["type"], str):
+            model_cls = self._resolve_model_class(data["type"])
+        elif isinstance(target_type, type) and issubclass(target_type, abstract_reference):
             model_cls = target_type
         elif isinstance(target_type, str):
-            clean_name = target_type.strip().lower().replace("_model", "")
-            matched = [
-                cls for cls in self._get_all_domain_models()
-                if cls.__name__.lower().replace("_model", "") == clean_name
-            ]
-            model_cls = matched[0] if matched else self.determine_type(data)
+            model_cls = self._resolve_model_class(target_type)
         else:
-            model_cls = self.determine_type(data)
+            raise arguments_exception("В данных отсутствует поле 'type' и не передан target_type", "data")
 
         # Исключаем дубликаты объектов в памяти
         obj_id = None
         if "id" in data and data["id"]:
             obj_id = UUID(str(data["id"])) if not isinstance(data["id"], UUID) else data["id"]
-            if obj_id in self._cache:
-                return self._cache[obj_id]
+            cached_obj = self._find_in_cache(obj_id)
+            if cached_obj is not None:
+                return cached_obj
 
         # Создаем экземпляр модели и сразу регистрируем в кеше
         instance = model_cls()
         if obj_id is not None:
             instance.id = obj_id
-            self._cache[obj_id] = instance
+            self._save_to_cache(obj_id, instance)
 
         # Сортируем ключи так, чтобы brutto шло перед netto 
         sorted_items = sorted(data.items(), key=lambda kv: 1 if kv[0] == "netto" else 0)
 
         # Заполняем свойства модели
         for key, value in sorted_items:
-            if key == "id":
+            if key in ("id", "type"):
                 continue
 
             # Строки рецептов - добавляем через метод add_*
