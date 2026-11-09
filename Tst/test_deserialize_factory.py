@@ -25,7 +25,7 @@ def test_success_deserialize_flat_group_model():
     }
 
     # Act
-    group = factory.deserialize(data, group_model)
+    group = factory.deserialize(data)
 
     # Assert
     assert isinstance(group, group_model)
@@ -96,13 +96,13 @@ def test_success_deserialize_cache_prevents_duplication():
     assert obj1 is obj2
     assert obj1.id == UUID(shared_id)
 
-def test_success_deserialize_and_compare_with_storage_manager():
+def test_full_roundtrip_all_data_export_import_and_compare():
     """
-    Десериализация реальных JSON-файлов
-    и сравнение с данными storage_manager.
+    Полный тест 
+    Берет все коллекции storage_manager, сериализует в JSON,
+    десериализует обратно и по полям сравнивает все доменные модели.
     """
-
-    # Arrange: загружаем хранилище
+    # 1. Инициализируем хранилище
     sm = settings_manager()
     if not sm.is_loaded:
         sm.load()
@@ -114,56 +114,68 @@ def test_success_deserialize_and_compare_with_storage_manager():
     c_factory = convert_factory()
     d_factory = deserialize_factory(storage=storage)
 
-    # 1. Проверяем склады
-    wh_json = c_factory.convert(list(storage.warehouses.values()))
-    deserialized_warehouses = d_factory.deserialize(wh_json)
+    # 2. Сериализуем все коллекции storage_manager
+    exported_data = {
+        key: c_factory.convert(list(collection.values()))
+        for key, collection in storage.data.items()
+    }
 
-    assert len(deserialized_warehouses) == len(storage.warehouses)
-    for wh in deserialized_warehouses:
-        original = storage.warehouses[wh.id]
-        assert wh.id == original.id
-        assert wh.name == original.name
-        assert wh.address == original.address
-        assert wh.type == original.type
+    # 3. Десериализуем обратно через deserialize_factory
+    restored_data = {
+        key: d_factory.deserialize(items)
+        for key, items in exported_data.items()
+    }
 
-    # 2. Проверяем единицы измерения
-    units_json = c_factory.convert(list(storage.units.values()))
-    deserialized_units = d_factory.deserialize(units_json)
+    # 4. Сравниваем:
+    # Склады 
+    assert len(restored_data["warehouses"]) == len(storage.warehouses)
+    for wh in restored_data["warehouses"]:
+        orig = storage.warehouses[wh.id]
+        assert wh.id == orig.id
+        assert wh.name == orig.name
+        assert wh.address == orig.address
+        assert wh.type == orig.type
 
-    assert len(deserialized_units) == len(storage.units)
-    for u in deserialized_units:
-        original = storage.units[u.id]
-        assert u.id == original.id
-        assert u.name == original.name
-        assert u.conversion_factor == original.conversion_factor
-        assert u.base_unit.name == original.base_unit.name
+    # Единицы измерения 
+    assert len(restored_data["units"]) == len(storage.units)
+    for u in restored_data["units"]:
+        orig = storage.units[u.id]
+        assert u.id == orig.id
+        assert u.name == orig.name
+        assert u.conversion_factor == orig.conversion_factor
+        assert u.base_unit.name == orig.base_unit.name
+        assert u.type == orig.type
 
-    # 3. Проверяем номенклатуру
-    nom_json = c_factory.convert(list(storage.nomenclature.values()))
-    deserialized_nomenclature = d_factory.deserialize(nom_json)
+    # Группы номенклатуры 
+    assert len(restored_data["groups"]) == len(storage.groups)
+    for g in restored_data["groups"]:
+        orig = storage.groups[g.id]
+        assert g.id == orig.id
+        assert g.name == orig.name
+        assert g.type == orig.type
 
-    assert len(deserialized_nomenclature) == len(storage.nomenclature)
-    for item in deserialized_nomenclature:
-        original = storage.nomenclature[item.id]
-        assert item.id == original.id
-        assert item.name == original.name
-        assert item.full_name == original.full_name
-        assert item.group.name == original.group.name
-        assert item.unit.name == original.unit.name
+    # Номенклатура
+    assert len(restored_data["nomenclature"]) == len(storage.nomenclature)
+    for item in restored_data["nomenclature"]:
+        orig = storage.nomenclature[item.id]
+        assert item.id == orig.id
+        assert item.name == orig.name
+        assert item.full_name == orig.full_name
+        assert item.group.name == orig.group.name
+        assert item.unit.name == orig.unit.name
+        assert item.type == orig.type
 
-    # 4. Проверяем рецепты
-    recipe_json = c_factory.convert(list(storage.recipes.values()))
-    deserialized_recipes = d_factory.deserialize(recipe_json)
-
-    assert len(deserialized_recipes) == len(storage.recipes)
-    for r in deserialized_recipes:
-        original = storage.recipes[r.id]
-        assert r.id == original.id
-        assert r.name == original.name
-        assert r.target_item.name == original.target_item.name
-        assert len(r.rows) == len(original.rows)
-        assert r.brutto_weight == original.brutto_weight
-        assert r.netto_weight == original.netto_weight
+    # Рецепты 
+    assert len(restored_data["recipes"]) == len(storage.recipes)
+    for r in restored_data["recipes"]:
+        orig = storage.recipes[r.id]
+        assert r.id == orig.id
+        assert r.name == orig.name
+        assert r.target_item.name == orig.target_item.name
+        assert len(r.rows) == len(orig.rows)
+        assert r.brutto_weight == orig.brutto_weight
+        assert r.netto_weight == orig.netto_weight
+        assert r.type == orig.type
 
 def test_throw_exception_deserialize_unknown_type():
     """Проверка ошибки при невозможности определить модель."""

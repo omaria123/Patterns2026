@@ -2,6 +2,7 @@ from typing import Any
 from uuid import UUID
 import importlib
 import json
+import inspect
 
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.abstract_deserialize_factory import abstract_deserialize_factory
@@ -82,17 +83,43 @@ class deserialize_factory(abstract_deserialize_factory):
                 subs.extend(_get_subclasses(s))
             return subs
 
+        clean_type = type_str.lower().replace("_model", "")
         for cls in _get_subclasses(abstract_reference):
-            if cls.__name__ == type_str or f"{cls.__module__}.{cls.__qualname__}" == type_str:
+            cls_name = cls.__name__.lower().replace("_model", "")
+            if cls.__name__ == type_str or f"{cls.__module__}.{cls.__qualname__}" == type_str or cls_name == clean_type:
+                return cls
+            if clean_type in ("unit", "units") and cls_name == "range":
                 return cls
 
         raise arguments_exception(f"Не удалось найти класс модели для типа '{type_str}'", "type")
-
     
     def _is_read_only_property(self, instance: Any, prop_name: str) -> bool:
         """Проверяет, является ли свойство read-only."""
         prop = getattr(type(instance), prop_name, None)
         return isinstance(prop, property) and prop.fset is None
+
+    def _build_constructor_args(self, model_cls: type, data: dict) -> dict:
+        """Определяет аргументы конструктора."""
+        sig = inspect.signature(model_cls.__init__)
+        args = {}
+
+        for param_name, param in sig.parameters.items():
+            if param_name in ("self", "args", "kwargs"):
+                continue
+
+            if param_name in data:
+                val = data[param_name]
+                if isinstance(val, dict):
+                    args[param_name] = self.deserialize(val)
+                elif isinstance(val, list):
+                    args[param_name] = [self.deserialize(item) if isinstance(item, dict) else item for item in val]
+                else:
+                    args[param_name] = val
+            elif param.default is not inspect.Parameter.empty:
+                args[param_name] = param.default
+
+        return args
+
 
     def deserialize(self, data: Any, target_type: Any = None) -> Any:
         """
@@ -130,18 +157,19 @@ class deserialize_factory(abstract_deserialize_factory):
             if cached_obj is not None:
                 return cached_obj
 
-        # Создаем экземпляр модели и сразу регистрируем в кеше
-        instance = model_cls()
+        args = self._build_constructor_args(model_cls, data)
+        try:
+            instance = model_cls(**args)
+        except Exception:
+            instance = model_cls()
+
         if obj_id is not None:
             instance.id = obj_id
             self._save_to_cache(obj_id, instance)
 
-        # Сортируем ключи так, чтобы brutto шло перед netto 
-        sorted_items = sorted(data.items(), key=lambda kv: 1 if kv[0] == "netto" else 0)
-
-        # Заполняем свойства модели
-        for key, value in sorted_items:
-            if key in ("id", "type"):
+         # Заполняем свойства модели, которые не вошли в __init__
+        for key, value in data.items():
+            if key in args or key in ("id", "type"):
                 continue
 
             # Строки рецептов - добавляем через метод add_*
