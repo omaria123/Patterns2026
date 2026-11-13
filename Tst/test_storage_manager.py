@@ -1,5 +1,6 @@
 import pytest
 from Src.Logics.storage_manager import storage_manager
+from Src.Models.group_model import group_model
 from Src.Models.settings_model import settings_model
 from Src.Models.warehouse_model import warehouse_model
 from Src.Models.range_model import range_model
@@ -176,3 +177,96 @@ def test_success_storage_manager_pizza_recipe_presence_and_weights():
     # 160 + 2.5 + 10 + 3 + 85 + 115 + 4 + 1 = 380.5 (нетто)
     assert recipe.brutto_weight == 391.5
     assert recipe.netto_weight == 380.5
+
+def test_success_storage_manager_is_referenced():
+    """Проверка определения связей: связанная сущность -> True, свободная -> False."""
+    # Arrange
+    storage = storage_manager()
+    storage.load()
+    grocery = next(g for g in storage.groups.values() if g.name == "Бакалея")
+    free_wh = warehouse_model("Свободный склад", "ул. Свободная, 1")
+    storage.add(free_wh)
+
+    # Act & Assert
+    assert storage.is_referenced(grocery) is True
+    assert storage.is_referenced(free_wh) is False
+
+
+def test_success_storage_manager_delete_free_entity():
+    """Проверка успешного удаления несвязанной сущности."""
+    # Arrange
+    storage = storage_manager()
+    free_wh = warehouse_model("Временный склад", "ул. Временная, 10")
+    storage.add(free_wh)
+
+    # Act
+    result = storage.delete("warehouse", str(free_wh.id))
+
+    # Assert
+    assert result is True
+    assert storage.get("warehouse", str(free_wh.id)) is None
+
+
+def test_throw_exception_storage_manager_delete_referenced_entity():
+    """Проверка блокировки удаления сущности, связанной с другими данными."""
+    # Arrange
+    storage = storage_manager()
+    storage.load()
+    grocery = next(g for g in storage.groups.values() if g.name == "Бакалея")
+
+    # Act & Assert
+    with pytest.raises(arguments_exception):
+        storage.delete("group", str(grocery.id))
+
+
+def test_success_storage_manager_update_entity_same_id():
+    """Проверка обновления сущности без изменения её кода (ID)."""
+    # Arrange
+    storage = storage_manager()
+    wh = warehouse_model("Старый склад", "ул. Старая, 1")
+    storage.add(wh)
+
+    updated_wh = warehouse_model("Новый склад", "ул. Новая, 2")
+    updated_wh.id = wh.id
+
+    # Act
+    result = storage.update("warehouse", str(wh.id), updated_wh)
+
+    # Assert
+    assert result is True
+    stored = storage.get("warehouse", str(wh.id))
+    assert stored.name == "Новый склад"
+    assert stored.address == "ул. Новая, 2"
+
+
+def test_throw_exception_storage_manager_update_referenced_entity_id():
+    """Проверка блокировки смены кода (ID) у связанной сущности."""
+    # Arrange
+    storage = storage_manager()
+    storage.load()
+    grocery = next(g for g in storage.groups.values() if g.name == "Бакалея")
+
+    new_group = group_model("Бакалея")
+
+    # Act & Assert
+    with pytest.raises(arguments_exception):
+        storage.update("group", str(grocery.id), new_group)
+
+
+def test_success_storage_manager_update_free_entity_id():
+    """Проверка, что у несвязанной сущности код менять можно."""
+    # Arrange
+    storage = storage_manager()
+    free_group = group_model("Свободная группа")
+    storage.add(free_group)
+    old_id = str(free_group.id)
+
+    new_group = group_model("Обновленная группа")
+
+    # Act
+    result = storage.update("group", old_id, new_group)
+
+    # Assert
+    assert result is True
+    assert storage.get("group", old_id) is None
+    assert storage.get("group", str(new_group.id)) is not None

@@ -2,7 +2,7 @@
   {
     "conversion_factor": 1,
     "base_unit": null,
-    "id": "c491ba0c-d0ca-4ee6-95dd-be07faabbf89",
+    "id": "bc676108-d12b-44de-82f1-b5a9674e1bca",
     "name": "грамм",
     "type": "Src.Models.range_model.range_model"
   },
@@ -11,18 +11,18 @@
     "base_unit": {
       "conversion_factor": 1,
       "base_unit": null,
-      "id": "c491ba0c-d0ca-4ee6-95dd-be07faabbf89",
+      "id": "bc676108-d12b-44de-82f1-b5a9674e1bca",
       "name": "грамм",
       "type": "Src.Models.range_model.range_model"
     },
-    "id": "91c7a698-e7ef-4d81-af22-402e89a4f9c8",
+    "id": "26b3223d-2335-4e4a-a0d2-603a3d661a40",
     "name": "килограмм",
     "type": "Src.Models.range_model.range_model"
   },
   {
     "conversion_factor": 1,
     "base_unit": null,
-    "id": "3d7fcc0d-63f0-4c8c-ac9e-65b31a2c89d4",
+    "id": "76147851-86c8-4260-bbb9-6ac73f1688e9",
     "name": "миллилитр",
     "type": "Src.Models.range_model.range_model"
   },
@@ -31,18 +31,18 @@
     "base_unit": {
       "conversion_factor": 1,
       "base_unit": null,
-      "id": "3d7fcc0d-63f0-4c8c-ac9e-65b31a2c89d4",
+      "id": "76147851-86c8-4260-bbb9-6ac73f1688e9",
       "name": "миллилитр",
       "type": "Src.Models.range_model.range_model"
     },
-    "id": "51a68a86-fb48-4a82-bebd-8d5d065866b9",
+    "id": "ae1a5e40-6411-4665-80e3-9743ed87831a",
     "name": "литр",
     "type": "Src.Models.range_model.range_model"
   },
   {
     "conversion_factor": 1,
     "base_unit": null,
-    "id": "689f0f7c-27ce-4d2c-8f52-143d455499be",
+    "id": "9cd6cf9f-de38-42b0-82bc-94d8d066276d",
     "name": "штука",
     "type": "Src.Models.range_model.range_model"
   }

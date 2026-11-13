@@ -1,11 +1,15 @@
 import connexion
 from flask import Response
+import json
 
 from Src.Dtos.report_type_enum import report_type_enum
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.settings_manager import settings_manager
 from Src.Logics.storage_manager import storage_manager
 from Src.Logics.report_factory import report_factory
+from Src.Core.exception import arguments_exception
+from Src.Logics.convert_factory import convert_factory
+from Src.Logics.deserialize_factory import deserialize_factory
 
 app = connexion.FlaskApp(__name__, specification_dir="./")
 
@@ -92,6 +96,29 @@ def get_report_default(entity_type: str, entity_id: str):
     result_dto = report.build(entity)
     return _format_http_response(result_dto)
 
+# Подключение Swagger 
+def get_entities():
+    storage = storage_manager()
+    keys = list(storage.data.keys()) if hasattr(storage, "data") else []
+    return Response(
+        json.dumps(keys, ensure_ascii=False),
+        status=200,
+        mimetype="text/json"
+    )
+
+def get_default_report(entity: str, unique_code: str):
+    return get_report_default(entity, unique_code)
+
+def get_report_formats():
+    """Возвращает список всех поддерживаемых форматов отчетов в JSON."""
+    formats = [item.value for item in report_type_enum]
+    return Response(
+        json.dumps(formats, ensure_ascii=False),
+        status=200,
+        mimetype="application/json; charset=utf-8"
+    )
+
+app.add_api("openapi.yml")
 
 if __name__ == "__main__":
     storage = storage_manager()
