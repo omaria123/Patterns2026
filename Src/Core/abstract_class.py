@@ -60,3 +60,8 @@ class abstract_reference(ABC):
         return self._id == other._id
 
     
+    @property
+    def type(self) -> str:
+        """Полное название класса (включая модули)."""
+        return f"{self.__class__.__module__}.{self.__class__.__qualname__}"
+    
