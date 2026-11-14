@@ -1,5 +1,5 @@
 import connexion
-from flask import Response
+from flask import Response, request
 import json
 
 from Src.Dtos.report_type_enum import report_type_enum
@@ -9,13 +9,15 @@ from Src.Logics.storage_manager import storage_manager
 from Src.Logics.report_factory import report_factory
 from Src.Core.exception import arguments_exception
 from Src.Logics.convert_factory import convert_factory
-from Src.Logics.deserialize_factory import deserialize_factory
+from Src.Core.exception import arguments_exception
+from Src.Logics.reference_service import reference_service
 
 app = connexion.FlaskApp(__name__, specification_dir="./")
-
+service: reference_service | None = None
 
 def init_app():
     """Инициализация настроек и хранилища при старте сервера."""
+    global service
     sm = settings_manager()
     if not sm.is_loaded:
         sm.load()
@@ -23,7 +25,7 @@ def init_app():
     storage = storage_manager()
     if not storage.is_loaded:
         storage.convert(sm.settings)
-
+    service = reference_service(storage)
 
 init_app()
 
@@ -39,13 +41,24 @@ def _format_http_response(result_dto: report_result_dto):
 
     return Response(result_dto.data, mimetype=result_dto.mimetype, headers=headers)
 
+def _json_response(payload, status: int = 200, mimetype: str = "application/json; charset=utf-8") -> Response:
+    """Формирование JSON-ответа через convert_factory."""
+    serialized = service.serialize(payload)
+    return Response(
+        json.dumps(serialized, ensure_ascii=False),
+        status=status,
+        mimetype=mimetype
+    )
 
 # Список объектов и их кодов (ID) 
 @app.route("/api/list/<entity_type>", methods=["GET"])
 def list_entities(entity_type: str):
     """Выводит список всех доступных сущностей с их кодами."""
-    storage = storage_manager()
-    items = storage.list_items(entity_type)
+    try:
+        items = service.get_list(entity_type)
+    except arguments_exception:
+        return f"Сущности типа '{entity_type}' не найдены", 404
+
     if not items:
         return f"Сущности типа '{entity_type}' не найдены", 404
 
@@ -59,10 +72,12 @@ def list_entities(entity_type: str):
 # С явным указанием формата и кода сущности 
 @app.route("/api/report/<format_type>/<entity_type>/<entity_id>", methods=["GET"])
 def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
-    storage = storage_manager()
+    """Формирует отчет по указанному формату и коду сущности."""
+    try:
+        entity = service.get_by_id(entity_type, entity_id)
+    except arguments_exception as exc:
+        return str(exc), 400
 
-    # Поиск делегирован в storage_manager 
-    entity = storage.get(entity_type, entity_id)
     if not entity:
         return f"Сущность типа '{entity_type}' с кодом '{entity_id}' не найдена", 404
 
@@ -75,65 +90,88 @@ def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
     if format_enum is None:
         return f"Неподдерживаемый формат: '{format_type}'", 400
 
-    factory = report_factory()
-    report = factory.create(format_enum)
-    result_dto = report.build(entity)
-    return _format_http_response(result_dto)
-
+    report = report_factory().create(format_enum)
+    return _format_http_response(report.build(entity))
 
 # По умолчанию из настроек (create_default) по коду сущности
 @app.route("/api/report/<entity_type>/<entity_id>", methods=["GET"])
 def get_report_default(entity_type: str, entity_id: str):
-    storage = storage_manager()
+    """Формирует отчет в формате по умолчанию из настроек."""
+    try:
+        entity = service.get_by_id(entity_type, entity_id)
+    except arguments_exception as exc:
+        return str(exc), 400
 
-    # Поиск делегирован в storage_manager
-    entity = storage.get(entity_type, entity_id)
     if not entity:
         return f"Сущность типа '{entity_type}' с кодом '{entity_id}' не найдена", 404
 
-    factory = report_factory()
-    report = factory.create_default()
-    result_dto = report.build(entity)
-    return _format_http_response(result_dto)
+    report = report_factory().create_default()
+    return _format_http_response(report.build(entity))
 
 # Подключение Swagger 
 def get_entities():
-    storage = storage_manager()
-    keys = list(storage.data.keys()) if hasattr(storage, "data") else []
-    return Response(
-        json.dumps(keys, ensure_ascii=False),
-        status=200,
-        mimetype="text/json"
-    )
+    """Возвращает список ключей доменных сущностей через общий сериализатор."""
+    return _json_response(service.get_domains(), status=200, mimetype="text/json")
+
 
 def get_default_report(entity: str, unique_code: str):
+    """Формирует отчет по умолчанию через OpenAPI."""
     return get_report_default(entity, unique_code)
 
+
 def get_report_formats():
-    """Возвращает список всех поддерживаемых форматов отчетов в JSON."""
+    """Возвращает список форматов отчетов через общий сериализатор."""
     formats = [item.value for item in report_type_enum]
-    return Response(
-        json.dumps(formats, ensure_ascii=False),
-        status=200,
-        mimetype="application/json; charset=utf-8"
-    )
+    return _json_response(formats, status=200)
+
+
+def get_entity(entity_type: str, entity_id: str):
+    """Возвращает доменную сущность по типу и коду."""
+    try:
+        entity = service.get_by_id(entity_type, entity_id)
+        if entity is None:
+            return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
+        return _json_response(entity, status=200)
+    except arguments_exception as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
+
+def create_entity(entity_type: str, body: dict = None):
+    """Создает новую доменную сущность через сервисный слой."""
+    data = body if body is not None else request.get_json(silent=True)
+    try:
+        entity = service.create(entity_type, data)
+        return _json_response(entity, status=201)
+    except arguments_exception as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
+
+def update_entity(entity_type: str, entity_id: str, body: dict = None):
+    """Обновляет существующую доменную сущность через сервисный слой."""
+    data = body if body is not None else request.get_json(silent=True)
+    try:
+        updated = service.update(entity_type, entity_id, data)
+        if updated is None:
+            return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
+        return _json_response(updated, status=200)
+    except arguments_exception as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
+
+def delete_entity(entity_type: str, entity_id: str):
+    """Удаляет доменную сущность через сервисный слой."""
+    try:
+        deleted = service.delete(entity_type, entity_id)
+        if not deleted:
+            return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
+        return _json_response({"status": "deleted", "id": str(entity_id)}, status=200)
+    except arguments_exception as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
 
 app.add_api("openapi.yml")
 
 if __name__ == "__main__":
-    storage = storage_manager()
-
-    # Берем сгенерированные коды сущностей:
-    r_id = list(storage.recipes.keys())[0] if storage.recipes else ""
-    n_id = list(storage.nomenclature.keys())[0] if storage.nomenclature else ""
-    u_id = list(storage.units.keys())[0] if storage.units else ""
-
     print("\n[INFO] Сервер запущен на http://localhost:8080")
-    print("[INFO] Примеры рабочих запросов строго по коду (ID):")
-    print("  1. Посмотреть коды номенклатуры:  http://localhost:8080/api/list/nomenclature")
-    print("  2. Посмотреть коды рецептов:      http://localhost:8080/api/list/recipe")
-    print(f"  3. Отчет XML по коду:             http://localhost:8080/api/report/xml/recipe/{r_id}")
-    print(f"  4. Скачать CSV по коду:           http://localhost:8080/api/report/csv/recipe/{r_id}")
-    print(f"  5. Отчет по умолчанию (п. 8):     http://localhost:8080/api/report/recipe/{r_id}\n")
-
+    print("[INFO] Swagger UI: http://localhost:8080/ui/\n")
     app.run(host="0.0.0.0", port=8080)

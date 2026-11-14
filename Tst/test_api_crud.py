@@ -107,7 +107,7 @@ def test_throw_api_create_invalid_data(client):
     assert client.post("/api/entity/group", json={"name": "   "}).status_code == 400
 
     # Act & Assert: неизвестный тип сущности
-    assert client.post("/api/entity/unknown_type", json={"name": "Тест"}).status_code == 404
+    assert client.post("/api/entity/unknown_type", json={"name": "Тест"}).status_code == 400
 
     # Act & Assert: дубликат существующего кода (ID)
     dup_payload = {"id": str(existing_group.id), "name": "Дубликат"}
@@ -135,11 +135,11 @@ def test_throw_api_delete_referenced_unit_blocked(client):
     gram = next(u for u in storage.units.values() if u.name == "грамм")
 
     # Act
-    response = client.delete(f"/api/entity/unit/{gram.id}")
+    response = client.delete(f"/api/entity/units/{gram.id}")
 
     # Assert
     assert response.status_code == 400
-    assert client.get(f"/api/entity/unit/{gram.id}").status_code == 200
+    assert client.get(f"/api/entity/units/{gram.id}").status_code == 200
 
 
 def test_throw_api_delete_referenced_nomenclature_blocked(client):

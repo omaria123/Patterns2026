@@ -64,7 +64,7 @@ paths:
                 type: array
                 items:
                   type: string
-              example: ["range_model", "group_model", "storage_model", "nomenclature_model", "receipt_model"]
+              example: ["warehouses", "units", "groups", "nomenclature", "recipes"]
         '500':
           description: Внутренняя ошибка сервера.
           content:
@@ -91,7 +91,7 @@ paths:
   /api/entity/{entity_type}:
     post:
       summary: Создать новую доменную сущность
-      operationId: Src.Logics.entity_controller.create_entity
+      operationId: main.create_entity
       parameters:
         - name: entity_type
           in: path
@@ -128,7 +128,7 @@ paths:
   /api/entity/{entity_type}/{entity_id}:
     get:
       summary: Получить доменную сущность по коду (ID)
-      operationId: Src.Logics.entity_controller.get_entity
+      operationId: main.get_entity
       parameters:
         - name: entity_type
           in: path
@@ -156,7 +156,7 @@ paths:
 
     put:
       summary: Обновить доменную сущность
-      operationId: Src.Logics.entity_controller.update_entity
+      operationId: main.update_entity
       parameters:
         - name: entity_type
           in: path
@@ -196,7 +196,7 @@ paths:
 
     delete:
       summary: Удалить доменную сущность
-      operationId: Src.Logics.entity_controller.delete_entity
+      operationId: main.delete_entity
       parameters:
         - name: entity_type
           in: path

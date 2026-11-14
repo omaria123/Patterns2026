@@ -1,5 +1,3 @@
-from typing import Any
-from uuid import UUID
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exception
 from Src.Logics.settings_manager import settings_manager
@@ -34,6 +32,14 @@ class storage_manager(abstract_manager):
         self._nomenclature: dict = {}
         self._recipes: dict = {}
         self._is_loaded: bool = False
+
+        self._collections_by_type: dict[type, dict] = {
+            warehouse_model: self._warehouses,
+            range_model: self._units,
+            group_model: self._groups,
+            nomenclature_model: self._nomenclature,
+            recipe_model: self._recipes
+        }
 
     @classmethod
     def clear(cls) -> None:
@@ -89,106 +95,10 @@ class storage_manager(abstract_manager):
         """Флаг успешной загрузки / готовности данных."""
         return self._is_loaded
 
-    # Поиск и получение сущностей
+    def domains(self) -> list[str]:
+        """Возвращает список ключей (доменных коллекций) хранилища."""
+        return list(self.data.keys())
 
-    def _resolve_entity(self, entity_type: str) -> tuple[dict, type] | None:
-        """Единый реестр: сопоставляет строковый тип с коллекцией и классом модели."""
-        if not isinstance(entity_type, str):
-            return None
-
-        clean_type = entity_type.strip().lower()
-        mapping = {
-            "recipe": (self._recipes, recipe_model),
-            "recipes": (self._recipes, recipe_model),
-            "nomenclature": (self._nomenclature, nomenclature_model),
-            "nomenclatures": (self._nomenclature, nomenclature_model),
-            "unit": (self._units, range_model),
-            "units": (self._units, range_model),
-            "range": (self._units, range_model),
-            "ranges": (self._units, range_model),
-            "warehouse": (self._warehouses, warehouse_model),
-            "warehouses": (self._warehouses, warehouse_model),
-            "group": (self._groups, group_model),
-            "groups": (self._groups, group_model),
-        }
-        return mapping.get(clean_type)
-
-    def _get_collection(self, entity_type: str) -> dict | None:
-        resolved = self._resolve_entity(entity_type)
-        return resolved[0] if resolved else None
-
-    def get_model_class(self, entity_type: str) -> type | None:
-        resolved = self._resolve_entity(entity_type)
-        return resolved[1] if resolved else None
-
-    def get(self, entity_type: str, entity_id: str):
-        """
-        Поиск конкретной сущности по типу и ее ID.
-        Возвращает объект модели или None.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None or not entity_id:
-            return None
-
-        target_id = str(entity_id).strip().lower()
-        for item_id, item in collection.items():
-            if str(item_id).lower() == target_id:
-                return item
-
-        return None
-
-    def list_items(self, entity_type: str) -> list:
-        """
-        Возвращает список всех объектов указанного типа.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None:
-            return []
-        return list(collection.values())
-
-    def is_referenced(self, item: Any) -> bool:
-        """
-        Проверка: связана ли сущность с другими объектами в хранилище.
-        Динамически обходит все коллекции и свойства объектов.
-        """
-        if item is None:
-            return False
-
-        target_id = item.id if hasattr(item, "id") else UUID(str(item))
-
-        # Обходим все коллекции хранилища 
-        for collection in self.data.values():
-            for obj in collection.values():
-                # Пропускаем сам проверяемый объект
-                if getattr(obj, "id", None) == target_id:
-                    continue
-
-                # Проверяем все свойства чужого объекта 
-                for attr_name in dir(obj):
-                    if attr_name.startswith("_"):
-                        continue
-                    try:
-                        val = getattr(obj, attr_name, None)
-                    except Exception:
-                        continue
-
-                    # Если свойство напрямую ссылается на наш ID
-                    if getattr(val, "id", None) == target_id:
-                        return True
-
-                    # Если свойство - коллекция 
-                    if isinstance(val, (list, tuple)):
-                        for element in val:
-                            if getattr(element, "id", None) == target_id:
-                                return True
-                            # Проверяем вложенные поля элемента списка 
-                            for sub_attr in dir(element):
-                                if not sub_attr.startswith("_"):
-                                    sub_val = getattr(element, sub_attr, None)
-                                    if getattr(sub_val, "id", None) == target_id:
-                                        return True
-
-        return False
 
     #Управление добавлением, удалением и обновлением с контролем связей 
     def add(self, item) -> bool:
@@ -196,18 +106,12 @@ class storage_manager(abstract_manager):
         Универсальный метод добавления объекта в хранилище с контролем уникальности.
         Возвращает True при успешном добавлении, False если объект уже существует.
         """
-        if isinstance(item, warehouse_model):
-            target = self._warehouses
-        elif isinstance(item, range_model):
-            target = self._units
-        elif isinstance(item, group_model):
-            target = self._groups
-        elif isinstance(item, nomenclature_model):
-            target = self._nomenclature
-        elif isinstance(item, recipe_model):
-            target = self._recipes
-        else:
-            raise arguments_exception("Попытка добавить неподдерживаемый тип объекта")
+        if item is None:
+            raise arguments_exception("Добавляемый объект не может быть None", "item")
+
+        target = self._collections_by_type.get(type(item))
+        if target is None:
+            raise arguments_exception("Попытка добавить неподдерживаемый тип объекта", "item")
 
         if not getattr(item, "name", "").strip():
             raise arguments_exception("Наименование сущности не может быть пустым", "name")
@@ -217,52 +121,6 @@ class storage_manager(abstract_manager):
             return False
 
         target[item.id] = item
-        return True
-    def delete(self, entity_type: str, entity_id: str) -> bool:
-        """
-        Удаление сущности из хранилища по типу и ID.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None:
-            raise arguments_exception(f"Неизвестный тип сущности: '{entity_type}'")
-
-        existing = self.get(entity_type, entity_id)
-        if existing is None:
-            return False
-
-        if self.is_referenced(existing):
-            raise arguments_exception(
-                f"Запрещено удалять сущность '{existing.name}', так как она связана с другими данными!"
-            )
-
-        del collection[existing.id]
-        return True
-
-    def update(self, entity_type: str, entity_id: str, new_item: Any) -> bool:
-        """
-        Обновление сущности в хранилище.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None:
-            raise arguments_exception(f"Неизвестный тип сущности: '{entity_type}'")
-
-        if not getattr(new_item, "name", "").strip():
-            raise arguments_exception("Наименование сущности не может быть пустым", "name")
-
-        existing = self.get(entity_type, entity_id)
-        if existing is None:
-            return False
-
-        # Контроль изменения кода (ID): если код меняется, проверяем связи
-        if str(new_item.id).lower() != str(existing.id).lower():
-            if self.is_referenced(existing):
-                raise arguments_exception(
-                    f"Запрещено менять код сущности '{existing.name}', так как она связана с другими данными!"
-                )
-            # Если сущность свободна - удаляем старый ключ
-            del collection[existing.id]
-
-        collection[new_item.id] = new_item
         return True
 
     #Логика первого старта 

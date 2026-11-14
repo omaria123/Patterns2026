@@ -1,9 +1,9 @@
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
 from Src.Models.nomenclature_model import nomenclature_model
+from Src.Core.abstract_has_references import abstract_has_references
 
-
-class recipe_row_model(abstract_reference):
+class recipe_row_model(abstract_reference, abstract_has_references):
     """
     Модель строки технологической карты.
     Содержит ссылку на номенклатуру, а также вес брутто и нетто в граммах.
@@ -103,3 +103,9 @@ class recipe_row_model(abstract_reference):
         row.brutto = brutto
         row.netto = netto
         return row
+
+    def get_references(self) -> list[abstract_reference]:
+        """Возвращает номенклатуру, используемую в строке рецепта."""
+        if self.nomenclature is not None:
+            return [self.nomenclature]
+        return []
