@@ -1,6 +1,7 @@
 import connexion
 from flask import Response, request
 import json
+from uuid import UUID
 
 from Src.Dtos.report_type_enum import report_type_enum
 from Src.Dtos.report_result_dto import report_result_dto
@@ -11,6 +12,7 @@ from Src.Core.exception import arguments_exception
 from Src.Logics.convert_factory import convert_factory
 from Src.Core.exception import arguments_exception
 from Src.Logics.reference_service import reference_service
+from Src.Logics.deserialize_factory import deserialize_factory
 
 app = connexion.FlaskApp(__name__, specification_dir="./")
 service: reference_service | None = None
@@ -50,12 +52,20 @@ def _json_response(payload, status: int = 200, mimetype: str = "application/json
         mimetype=mimetype
     )
 
+def _parse_uuid(raw_id: str) -> UUID:
+    """Преобразует строковый идентификатор из URL в объект UUID."""
+    try:
+        return UUID(str(raw_id).strip())
+    except ValueError:
+        raise arguments_exception(f"Некорректный формат кода (UUID): '{raw_id}'", "entity_id")
+
 # Список объектов и их кодов (ID) 
 @app.route("/api/list/<entity_type>", methods=["GET"])
 def list_entities(entity_type: str):
     """Выводит список всех доступных сущностей с их кодами."""
     try:
-        items = service.get_list(entity_type)
+        target_cls = service.resolve_model_type(entity_type)
+        items = service.get_list(target_cls)
     except arguments_exception:
         return f"Сущности типа '{entity_type}' не найдены", 404
 
@@ -68,13 +78,13 @@ def list_entities(entity_type: str):
 
     return Response("\n".join(lines), mimetype="text/plain; charset=utf-8")
 
-
-# С явным указанием формата и кода сущности 
 @app.route("/api/report/<format_type>/<entity_type>/<entity_id>", methods=["GET"])
 def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
     """Формирует отчет по указанному формату и коду сущности."""
     try:
-        entity = service.get_by_id(entity_type, entity_id)
+        target_cls = service.resolve_model_type(entity_type)
+        uid = _parse_uuid(entity_id)
+        entity = service.get_by_id(target_cls, uid)
     except arguments_exception as exc:
         return str(exc), 400
 
@@ -98,7 +108,9 @@ def get_report_by_format(format_type: str, entity_type: str, entity_id: str):
 def get_report_default(entity_type: str, entity_id: str):
     """Формирует отчет в формате по умолчанию из настроек."""
     try:
-        entity = service.get_by_id(entity_type, entity_id)
+        target_cls = service.resolve_model_type(entity_type)
+        uid = _parse_uuid(entity_id)
+        entity = service.get_by_id(target_cls, uid)
     except arguments_exception as exc:
         return str(exc), 400
 
@@ -107,6 +119,7 @@ def get_report_default(entity_type: str, entity_id: str):
 
     report = report_factory().create_default()
     return _format_http_response(report.build(entity))
+
 
 # Подключение Swagger 
 def get_entities():
@@ -128,44 +141,74 @@ def get_report_formats():
 def get_entity(entity_type: str, entity_id: str):
     """Возвращает доменную сущность по типу и коду."""
     try:
-        entity = service.get_by_id(entity_type, entity_id)
+        target_cls = service.resolve_model_type(entity_type)
+        uid = _parse_uuid(entity_id)
+        entity = service.get_by_id(target_cls, uid)
         if entity is None:
             return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
         return _json_response(entity, status=200)
     except arguments_exception as exc:
         return _json_response({"error": str(exc)}, status=400)
 
-
 def create_entity(entity_type: str, body: dict = None):
-    """Создает новую доменную сущность через сервисный слой."""
+    """Десериализует входящий JSON и сохраняет модель через сервисный слой."""
     data = body if body is not None else request.get_json(silent=True)
-    try:
-        entity = service.create(entity_type, data)
-        return _json_response(entity, status=201)
-    except arguments_exception as exc:
-        return _json_response({"error": str(exc)}, status=400)
+    if not isinstance(data, dict) or not data:
+        return _json_response({"error": "Тело запроса должно быть непустым JSON-объектом"}, status=400)
 
+    try:
+        target_cls = service.resolve_model_type(entity_type)
+        entity = deserialize_factory().deserialize(data, target_type=target_cls)
+        if type(entity) is not target_cls:
+            raise arguments_exception(f"Сущность не соответствует типу '{entity_type}'", "type")
+
+        if not service.add(entity):
+            return _json_response({"error": f"Сущность с кодом '{entity.id}' уже существует"}, status=400)
+
+        return _json_response(entity, status=201)
+    except (arguments_exception, ValueError) as exc:
+        return _json_response({"error": str(exc)}, status=400)
 
 def update_entity(entity_type: str, entity_id: str, body: dict = None):
-    """Обновляет существующую доменную сущность через сервисный слой."""
+    """Десериализует входящий JSON и обновляет модель через сервисный слой."""
     data = body if body is not None else request.get_json(silent=True)
+    if not isinstance(data, dict) or not data:
+        return _json_response({"error": "Тело запроса должно быть непустым JSON-объектом"}, status=400)
+
     try:
-        updated = service.update(entity_type, entity_id, data)
-        if updated is None:
+        target_cls = service.resolve_model_type(entity_type)
+        uid = _parse_uuid(entity_id)
+        existing = service.get_by_id(target_cls, uid)
+        if existing is None:
             return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
-        return _json_response(updated, status=200)
-    except arguments_exception as exc:
+
+        payload = dict(data)
+        if "id" not in payload or not payload["id"]:
+            payload["id"] = str(existing.id)
+
+        new_item = deserialize_factory().deserialize(payload, target_type=target_cls)
+        if type(new_item) is not target_cls:
+            raise arguments_exception(f"Сущность не соответствует типу '{entity_type}'", "type")
+
+        service.update(uid, new_item)
+        return _json_response(new_item, status=200)
+    except (arguments_exception, ValueError) as exc:
         return _json_response({"error": str(exc)}, status=400)
+
 
 
 def delete_entity(entity_type: str, entity_id: str):
     """Удаляет доменную сущность через сервисный слой."""
     try:
-        deleted = service.delete(entity_type, entity_id)
-        if not deleted:
+        target_cls = service.resolve_model_type(entity_type)
+        uid = _parse_uuid(entity_id)
+        existing = service.get_by_id(target_cls, uid)
+        if existing is None:
             return _json_response({"error": f"Сущность '{entity_type}' с кодом '{entity_id}' не найдена"}, status=404)
-        return _json_response({"status": "deleted", "id": str(entity_id)}, status=200)
-    except arguments_exception as exc:
+
+        service.delete(existing)
+        return _json_response({"status": "deleted", "id": str(uid)}, status=200)
+    except (arguments_exception, ValueError) as exc:
         return _json_response({"error": str(exc)}, status=400)
 
 
