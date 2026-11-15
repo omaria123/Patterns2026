@@ -2,9 +2,9 @@ from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
 from Src.Models.group_model import group_model
 from Src.Models.range_model import range_model
+from Src.Core.abstract_has_references import abstract_has_references
 
-
-class nomenclature_model(abstract_reference):
+class nomenclature_model(abstract_reference, abstract_has_references):
     """
     Модель номенклатуры (товара, сырья, полуфабриката или блюда).
     Включает краткое имя (до 50 симв.), полное имя (до 255 симв.),
@@ -102,3 +102,12 @@ class nomenclature_model(abstract_reference):
             raise arguments_exception("Единица измерения должна быть объектом типа range_model", "unit")
 
         self._unit = value
+
+    def get_references(self) -> list[abstract_reference]:
+        """Возвращает группу и единицу измерения номенклатуры."""
+        refs = []
+        if self._group is not None:
+            refs.append(self._group)
+        if self._unit is not None:
+            refs.append(self._unit)
+        return refs

@@ -33,6 +33,14 @@ class storage_manager(abstract_manager):
         self._recipes: dict = {}
         self._is_loaded: bool = False
 
+        self._collections_by_type: dict[type, dict] = {
+            warehouse_model: self._warehouses,
+            range_model: self._units,
+            group_model: self._groups,
+            nomenclature_model: self._nomenclature,
+            recipe_model: self._recipes
+        }
+
     @classmethod
     def clear(cls) -> None:
         """Сброс состояния хранилища (для изоляции модульных тестов)."""
@@ -87,67 +95,26 @@ class storage_manager(abstract_manager):
         """Флаг успешной загрузки / готовности данных."""
         return self._is_loaded
 
-    # Поиск и получение сущностей
-
-    def _get_collection(self, entity_type: str) -> dict | None:
-        """Сопоставляет строковый тип сущности со словарем хранилища без жестких условий."""
-        if not isinstance(entity_type, str):
-            return None
-
-        # Словарь соответствий 
-        mapping = {
-            "recipe": self._recipes,
-            "nomenclature": self._nomenclature,
-            "unit": self._units,
-            "warehouse": self._warehouses,
-            "group": self._groups
-        }
-        return mapping.get(entity_type.strip().lower())
-
-    def get(self, entity_type: str, entity_id: str):
-        """
-        Поиск конкретной сущности по типу и ее ID.
-        Возвращает объект модели или None.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None or not entity_id:
-            return None
-
-        target_id = str(entity_id).strip().lower()
-        for item_id, item in collection.items():
-            if str(item_id).lower() == target_id:
-                return item
-
-        return None
-
-    def list_items(self, entity_type: str) -> list:
-        """
-        Возвращает список всех объектов указанного типа.
-        """
-        collection = self._get_collection(entity_type)
-        if collection is None:
-            return []
-        return list(collection.values())
+    def domains(self) -> list[str]:
+        """Возвращает список ключей (доменных коллекций) хранилища."""
+        return list(self.data.keys())
 
 
-    #Управление добавлением и контроль уникальности 
+    #Управление добавлением, удалением и обновлением с контролем связей 
     def add(self, item) -> bool:
         """
         Универсальный метод добавления объекта в хранилище с контролем уникальности.
         Возвращает True при успешном добавлении, False если объект уже существует.
         """
-        if isinstance(item, warehouse_model):
-            target = self._warehouses
-        elif isinstance(item, range_model):
-            target = self._units
-        elif isinstance(item, group_model):
-            target = self._groups
-        elif isinstance(item, nomenclature_model):
-            target = self._nomenclature
-        elif isinstance(item, recipe_model):
-            target = self._recipes
-        else:
-            raise arguments_exception("Попытка добавить неподдерживаемый тип объекта")
+        if item is None:
+            raise arguments_exception("Добавляемый объект не может быть None", "item")
+
+        target = self._collections_by_type.get(type(item))
+        if target is None:
+            raise arguments_exception("Попытка добавить неподдерживаемый тип объекта", "item")
+
+        if not getattr(item, "name", "").strip():
+            raise arguments_exception("Наименование сущности не может быть пустым", "name")
 
         # Контроль уникальности: запрет добавления объекта с уже существующим ID
         if item.id in target:

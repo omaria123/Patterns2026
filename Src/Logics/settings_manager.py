@@ -2,8 +2,7 @@ import json
 from Src.Core.abstract_manager import abstract_manager
 from Src.Core.exception import arguments_exception
 from Src.Models.settings_model import settings_model
-from Src.Models.organization_model import organization_model
-
+from Src.Logics.deserialize_factory import deserialize_factory 
 
 class settings_manager(abstract_manager):
     """
@@ -40,37 +39,15 @@ class settings_manager(abstract_manager):
 
     def convert(self) -> bool:
         """
-        Обработка загруженных данных и наполнение модели settings_model.
+        Обработка загруженных данных через общую фабрику десериализации.
         """
         if not self.__data or not isinstance(self.__data, dict):
             return False
 
         try:
-            settings = settings_model()
-            settings.boss_name = self.__data.get("boss_name", "")
-            settings.account_name = self.__data.get("account_name", "")
-
-            if "is_first_start" in self.__data:
-                settings.is_first_start = bool(self.__data["is_first_start"])
-
-            # Считываем формат ответа по умолчанию
-            if "response_format" in self.__data:
-                settings.response_format = self.__data["response_format"]
-
-            # Заполняем организацию
-            org_data = self.__data.get("organization", {})
-            if isinstance(org_data, dict):
-                org = organization_model(
-                    name=org_data.get("name", ""),
-                    inn=org_data.get("inn", ""),
-                    bik=org_data.get("bik", ""),
-                    account=org_data.get("account", ""),
-                    ownership_form=org_data.get("ownership_form", "")
-                )
-                settings.organization = org
-
-            self.__settings = settings
-            return True
+            factory = deserialize_factory()
+            self.__settings = factory.deserialize(self.__data, settings_model)
+            return self.__settings is not None
         except Exception:
             return False
 

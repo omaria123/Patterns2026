@@ -7,7 +7,6 @@ import inspect
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.abstract_deserialize_factory import abstract_deserialize_factory
 from Src.Core.exception import arguments_exception
-from Src.Logics.storage_manager import storage_manager
 
 class deserialize_factory(abstract_deserialize_factory):
     """
@@ -17,7 +16,7 @@ class deserialize_factory(abstract_deserialize_factory):
 
     def __init__(self, storage: storage_manager = None) -> None:
         """Инициализатор фабрики. Подготавливает кеш объектов."""
-        self._storage = storage if storage is not None else storage_manager()
+        self._storage = storage 
         self._local_cache: dict[UUID, abstract_reference] = {}
 
     @property
@@ -46,7 +45,7 @@ class deserialize_factory(abstract_deserialize_factory):
         if obj_id in self._local_cache:
             return self._local_cache[obj_id]
 
-        if hasattr(self._storage, "data") and isinstance(self._storage.data, dict):
+        if self._storage is not None and hasattr(self._storage, "data") and isinstance(self._storage.data, dict):
             for collection in self._storage.data.values():
                 if isinstance(collection, dict):
                     if obj_id in collection:
@@ -58,7 +57,7 @@ class deserialize_factory(abstract_deserialize_factory):
     def _save_to_cache(self, obj_id: UUID, instance: abstract_reference) -> None:
         """Сохранение объекта в локальный кеш и в хранилище storage_manager."""
         self._local_cache[obj_id] = instance
-        if hasattr(self._storage, "add"):
+        if self._storage is not None and hasattr(self._storage, "add"):
             try:
                 self._storage.add(instance)
             except Exception:
@@ -86,9 +85,7 @@ class deserialize_factory(abstract_deserialize_factory):
         clean_type = type_str.lower().replace("_model", "")
         for cls in _get_subclasses(abstract_reference):
             cls_name = cls.__name__.lower().replace("_model", "")
-            if cls.__name__ == type_str or f"{cls.__module__}.{cls.__qualname__}" == type_str or cls_name == clean_type:
-                return cls
-            if clean_type in ("unit", "units") and cls_name == "range":
+            if cls.__name__.lower() == type_str.lower() or f"{cls.__module__}.{cls.__qualname__}" == type_str or cls_name == clean_type:
                 return cls
 
         raise arguments_exception(f"Не удалось найти класс модели для типа '{type_str}'", "type")
@@ -110,7 +107,7 @@ class deserialize_factory(abstract_deserialize_factory):
             if param_name in data:
                 val = data[param_name]
                 if isinstance(val, dict):
-                    args[param_name] = self.deserialize(val)
+                    args[param_name] = self.deserialize(val, target_type=param_name)
                 elif isinstance(val, list):
                     args[param_name] = [self.deserialize(item) if isinstance(item, dict) else item for item in val]
                 else:
@@ -186,7 +183,7 @@ class deserialize_factory(abstract_deserialize_factory):
 
             # Вложенные модели: рекурсивно десериализуем
             if isinstance(value, dict):
-                child = self.deserialize(value)
+                child = self.deserialize(value, target_type=key)
                 if hasattr(instance, key):
                     setattr(instance, key, child)
                 continue

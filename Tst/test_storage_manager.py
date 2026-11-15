@@ -1,5 +1,6 @@
 import pytest
 from Src.Logics.storage_manager import storage_manager
+from Src.Models.group_model import group_model
 from Src.Models.settings_model import settings_model
 from Src.Models.warehouse_model import warehouse_model
 from Src.Models.range_model import range_model
