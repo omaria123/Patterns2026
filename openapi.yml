@@ -226,4 +226,70 @@ paths:
           content:
             application/json:
               schema:
-                type: object              
+                type: object 
+  /api/filter/{entity_type}:
+    post:
+      summary: Отфильтровать доменные сущности по DTO-фильтру
+      operationId: main.filter_entities
+      parameters:
+        - name: entity_type
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Ключ домена (warehouses, groups, units, nomenclature, recipes, transactions) или имя модели
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              name: "Мука"
+              filter_type: "like"
+      responses:
+        '200':
+          description: Отфильтрованный список сущностей в формате JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Некорректный фильтр или неизвестный тип сущности
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /api/reports/osv:
+    post:
+      summary: Сформировать ОСВ (оборотно-сальдовую ведомость) с учетом фильтрации
+      operationId: main.get_osv_report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              name: "мука"
+              filter_type: "like"
+              start_period: "2026-11-08T00:00:00"
+              end_period: "2026-11-20T23:59:59"
+      responses:
+        '200':
+          description: Строки ОСВ в формате JSON
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '400':
+          description: Некорректные параметры фильтрации
+          content:
+            application/json:
+              schema:
+                type: object           

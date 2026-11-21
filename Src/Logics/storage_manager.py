@@ -9,6 +9,9 @@ from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.recipe_model import recipe_model          
 from Src.Models.recipe_row_model import recipe_row_model 
 
+from datetime import datetime
+from Src.Models.transaction_model import transaction_model
+
 class storage_manager(abstract_manager):
     """
     Менеджер оперативного хранилища данных (In-Memory Repository).
@@ -32,13 +35,15 @@ class storage_manager(abstract_manager):
         self._nomenclature: dict = {}
         self._recipes: dict = {}
         self._is_loaded: bool = False
+        self._transactions: dict = {}
 
         self._collections_by_type: dict[type, dict] = {
             warehouse_model: self._warehouses,
             range_model: self._units,
             group_model: self._groups,
             nomenclature_model: self._nomenclature,
-            recipe_model: self._recipes
+            recipe_model: self._recipes,
+            transaction_model: self._transactions
         }
 
     @classmethod
@@ -80,6 +85,11 @@ class storage_manager(abstract_manager):
         return self._recipes
 
     @property
+    def transactions(self) -> dict:
+        """Коллекция складских транзакций {id: transaction_model}."""
+        return self._transactions
+
+    @property
     def data(self) -> dict:
         """Сводный словарь всех коллекций хранилища."""
         return {
@@ -87,7 +97,8 @@ class storage_manager(abstract_manager):
             "units": self._units,
             "groups": self._groups,
             "nomenclature": self._nomenclature,
-            "recipes": self._recipes
+            "recipes": self._recipes,
+            "transactions": self._transactions
         }
 
     @property
@@ -222,6 +233,19 @@ class storage_manager(abstract_manager):
         )
 
         self.add(pizza_recipe)
+
+        # 6. Складские транзакции 
+        transactions = [
+            transaction_model.create(main_wh, flour, kg, 50.0, datetime(2026, 11, 1, 9, 0)),
+            transaction_model.create(main_wh, flour, kg, -12.0, datetime(2026, 11, 10, 14, 0)),
+            transaction_model.create(main_wh, cheese, kg, 20.0, datetime(2026, 11, 1, 9, 30)),
+            transaction_model.create(main_wh, cheese, kg, -5.0, datetime(2026, 11, 12, 16, 0)),
+            transaction_model.create(restaurant_wh, flour, kg, 15.0, datetime(2026, 11, 5, 10, 0)),
+            transaction_model.create(restaurant_wh, box, piece, 100.0, datetime(2026, 11, 5, 10, 15)),
+            transaction_model.create(restaurant_wh, box, piece, -30.0, datetime(2026, 11, 15, 18, 0)),
+        ]
+        for tx in transactions:
+            self.add(tx)
 
     def load(self, file_name: str = "") -> None:
         """Загрузка данных хранилища (вызывает convert)."""
