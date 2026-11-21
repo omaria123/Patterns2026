@@ -32,16 +32,18 @@ def test_success_reference_service_is_referenced_index():
     assert service.is_referenced(free_wh) is False
 
 
-def test_success_reference_service_create_and_get():
+def test_success_reference_service_add_and_get():
     """Проверка создания новой сущности через сервис и поиска по ID."""
     # Arrange
     service = reference_service()
+    new_wh = warehouse_model("Новый склад", "ул. Новая, 5")
 
     # Act
-    created = service.create("warehouses", {"name": "Новый склад", "address": "ул. Новая, 5"})
-    found = service.get_by_id("warehouses", created.id)
+    added = service.add(new_wh)
+    found = service.get_by_id(warehouse_model, new_wh.id)
 
     # Assert
+    assert added is True
     assert found is not None
     assert found.name == "Новый склад"
 
@@ -50,14 +52,15 @@ def test_success_reference_service_delete_free_entity():
     """Проверка успешного удаления свободной сущности."""
     # Arrange
     service = reference_service()
-    created = service.create("warehouses", {"name": "Временный склад", "address": "ул. Мира, 10"})
+    wh = warehouse_model("Временный склад", "ул. Мира, 10")
+    service.add(wh)
 
     # Act
-    deleted = service.delete("warehouses", created.id)
+    deleted = service.delete(wh)
 
     # Assert
     assert deleted is True
-    assert service.get_by_id("warehouses", created.id) is None
+    assert service.get_by_id(warehouse_model, wh.id) is None
 
 
 def test_throw_exception_reference_service_delete_referenced_entity():
@@ -69,7 +72,7 @@ def test_throw_exception_reference_service_delete_referenced_entity():
 
     # Act & Assert
     with pytest.raises(arguments_exception):
-        service.delete("groups", grocery.id)
+        service.delete(grocery)
 
 
 def test_throw_exception_reference_service_update_referenced_id():
@@ -78,28 +81,30 @@ def test_throw_exception_reference_service_update_referenced_id():
     storage = storage_manager()
     service = reference_service(storage)
     grocery = next(g for g in storage.groups.values() if g.name == "Бакалея")
+    new_group = group_model("Бакалея")  # новый UUID
 
     # Act & Assert
     with pytest.raises(arguments_exception):
-        service.update("groups", grocery.id, {"id": str(uuid4()), "name": "Бакалея"})
+        service.update(grocery.id, new_group)
 
 
 def test_success_reference_service_update_free_entity_id():
     """Проверка возможности смены кода (ID) у свободной сущности."""
     # Arrange
     service = reference_service()
-    created = service.create("groups", {"name": "Свободная группа"})
-    old_id = created.id
-    new_id = uuid4()
+    free_group = group_model("Свободная группа")
+    service.add(free_group)
+    old_id = free_group.id
+
+    updated_group = group_model("Обновленная группа")
 
     # Act
-    updated = service.update("groups", old_id, {"id": str(new_id), "name": "Обновленная группа"})
+    result = service.update(old_id, updated_group)
 
     # Assert
-    assert updated.id == new_id
-    assert service.get_by_id("groups", old_id) is None
-    assert service.get_by_id("groups", new_id) is not None
-
+    assert result is True
+    assert service.get_by_id(group_model, old_id) is None
+    assert service.get_by_id(group_model, updated_group.id) is not None
 
 def test_throw_exception_reference_service_invalid_arguments():
     """Проверка валидации некорректных аргументов сервиса."""
@@ -108,8 +113,8 @@ def test_throw_exception_reference_service_invalid_arguments():
 
     # Act & Assert
     with pytest.raises(arguments_exception):
-        service.get_list("")
+        service.get_list(str)
     with pytest.raises(arguments_exception):
-        service.create("groups", {})
+        service.add("не_модель")
     with pytest.raises(arguments_exception):
-        service.is_referenced("не-uuid")
+        service.is_referenced("не_модель")

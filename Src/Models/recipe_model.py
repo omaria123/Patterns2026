@@ -2,9 +2,8 @@ from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.recipe_row_model import recipe_row_model
-from Src.Core.abstract_has_references import abstract_has_references
 
-class recipe_model(abstract_reference, abstract_has_references):
+class recipe_model(abstract_reference):
     """
     Модель технологической карты (рецепта).
     Содержит целевое готовое блюдо или полуфабрикат,
@@ -143,13 +142,3 @@ class recipe_model(abstract_reference, abstract_has_references):
             for sub in sub_recipes:
                 recipe.add_sub_recipe(sub)
         return recipe
-
-    def get_references(self) -> list[abstract_reference]:
-        """Возвращает целевое блюдо, ингредиенты строк и вложенные рецепты."""
-        refs = []
-        if self._target_item is not None:
-            refs.append(self._target_item)
-        for row in self._rows:
-            refs.extend(row.get_references())
-        refs.extend(self._sub_recipes)
-        return refs

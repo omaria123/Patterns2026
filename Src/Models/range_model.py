@@ -1,9 +1,8 @@
 from __future__ import annotations
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.exception import arguments_exception
-from Src.Core.abstract_has_references import abstract_has_references
 
-class range_model(abstract_reference, abstract_has_references):
+class range_model(abstract_reference):
     """
     Модель единицы измерения.
     Содержит наименование, коэффициент пересчета и ссылку на базовую единицу измерения.
@@ -89,9 +88,3 @@ class range_model(abstract_reference, abstract_has_references):
         result.base_unit = gram  # Привязываем грамм как базовую величину
 
         return result
-
-    def get_references(self) -> list[abstract_reference]:
-        """Возвращает базовую единицу измерения, если она отлична от текущей."""
-        if self._base_unit is not None and self._base_unit is not self:
-            return [self._base_unit]
-        return []
