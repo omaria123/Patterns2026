@@ -15,7 +15,7 @@ class filter_dto(abstract_reference):
     def __init__(
         self,
         name: str = "",
-        unique_code: str = "",
+        id: str | None = None,
         filter_type: filter_type_enum | str = filter_type_enum.EQUALS,
         nested: filter_dto | None = None,
         start_period: datetime | str | None = None,
@@ -23,14 +23,15 @@ class filter_dto(abstract_reference):
     ) -> None:
         """Инициализирует DTO фильтрации с валидацией входных параметров."""
         super().__init__()
-        self._unique_code: str = ""
+        self._id = None
         self._filter_type: filter_type_enum = filter_type_enum.EQUALS
         self._nested: filter_dto | None = None
         self._start_period: datetime | None = None
         self._end_period: datetime | None = None
 
         self.name = name
-        self.unique_code = unique_code
+        if id is not None:
+            self.id = id
         self.filter_type = filter_type
         if nested is not None:
             self.nested = nested
@@ -55,16 +56,17 @@ class filter_dto(abstract_reference):
         self._name = cleaned
 
     @property
-    def unique_code(self) -> str:
-        """Возвращает строку фильтра по уникальному коду (id) целевой сущности."""
-        return self._unique_code
+    def id(self):
+        """Возвращает идентификатор для фильтрации."""
+        return self._id
 
-    @unique_code.setter
-    def unique_code(self, value: str) -> None:
-        """Устанавливает фильтр по уникальному коду."""
-        if not isinstance(value, str):
-            raise arguments_exception("Уникальный код для фильтрации должен быть строкой", "unique_code")
-        self._unique_code = value.strip()
+    @id.setter
+    def id(self, value) -> None:
+        """Устанавливает идентификатор для фильтрации."""
+        if value is None or value == "":
+            self._id = None
+            return
+        self._id = str(value).strip()
 
     @property
     def filter_type(self) -> filter_type_enum:

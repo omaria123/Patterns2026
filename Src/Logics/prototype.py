@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.abstract_prototype import abstract_prototype
@@ -13,7 +14,7 @@ class prototype(abstract_prototype):
     Универсальная реализация шаблона Прототип.
     Фильтрует коллекции любых доменных моделей и возвращает новый экземпляр prototype.
     """
-
+    _CONTROL_FIELDS = {"type", "filter_type", "nested", "start_period", "end_period"}
     def __init__(self, source: list) -> None:
         """Инициализирует прототип исходным списком моделей."""
         super().__init__(source)
@@ -31,19 +32,27 @@ class prototype(abstract_prototype):
         if item is None:
             return False
 
-        # Фильтрация по наименованию
-        if filter_model.name:
-            item_name = str(getattr(item, "name", ""))
-            if not self._compare_text(item_name, filter_model.name, filter_model.filter_type, ignore_case=False):
+        # Универсальное сравнение любых полей фильтра с одноименными свойствами модели
+        for prop_name in self._get_properties(filter_model):
+            if prop_name in self._CONTROL_FIELDS:
+                continue
+
+            filter_val = getattr(filter_model, prop_name, None)
+            if filter_val is None or (isinstance(filter_val, str) and not filter_val.strip()):
+                continue
+
+            if not hasattr(item, prop_name):
                 return False
 
-        # Фильтрация по уникальному коду (id)
-        if filter_model.unique_code:
-            item_code = str(getattr(item, "id", ""))
-            if not self._compare_text(item_code, filter_model.unique_code, filter_model.filter_type, ignore_case=True):
+            item_val = getattr(item, prop_name, None)
+            if item_val is None:
                 return False
 
-        # Фильтрация по периоду 
+            ignore_case = isinstance(item_val, UUID) or isinstance(filter_val, UUID)
+            if not self._compare_text(str(item_val), str(filter_val), filter_model.filter_type, ignore_case=ignore_case):
+                return False
+
+        # Фильтрация по периоду (если заданы даты)
         if filter_model.start_period is not None or filter_model.end_period is not None:
             item_period = getattr(item, "period", None)
             if not isinstance(item_period, datetime):
@@ -53,7 +62,7 @@ class prototype(abstract_prototype):
             if filter_model.end_period is not None and item_period > filter_model.end_period:
                 return False
 
-        # Поиск во вложенных структурах 
+        # Поиск во вложенных структурах
         if filter_model.nested is not None:
             if not self._match_nested(item, filter_model.nested, set()):
                 return False

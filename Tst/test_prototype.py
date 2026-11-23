@@ -43,7 +43,7 @@ def test_success_prototype_filter_by_unique_code_on_groups(loaded_storage):
     proto = prototype(groups)
 
     # Act
-    result = proto.clone(filter_dto(unique_code=str(target.id), filter_type=filter_type_enum.EQUALS))
+    result = proto.clone(filter_dto(id=str(target.id), filter_type=filter_type_enum.EQUALS))
 
     # Assert
     assert len(result.data) == 1

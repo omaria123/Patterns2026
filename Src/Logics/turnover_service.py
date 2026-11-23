@@ -63,12 +63,12 @@ class turnover_service:
         """Применяет фильтр к самим транзакциям или их вложенным сущностям через Прототип."""
         entity_filter = filter_dto(
             name=filter_model.name,
-            unique_code=filter_model.unique_code,
+            id=filter_model.id,
             filter_type=filter_model.filter_type,
             nested=filter_model.nested
         )
 
-        if filter_model.nested is None and (filter_model.name or filter_model.unique_code):
+        if filter_model.nested is None and (filter_model.name or filter_model.id):
             return proto.clone(filter_dto(nested=entity_filter))
 
         return proto.clone(entity_filter)

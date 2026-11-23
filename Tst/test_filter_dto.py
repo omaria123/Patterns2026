@@ -13,7 +13,7 @@ def test_success_filter_dto_default_create():
 
     # Assert
     assert dto.name == ""
-    assert dto.unique_code == ""
+    assert dto.id is None
     assert dto.filter_type == filter_type_enum.EQUALS
     assert dto.nested is None
 

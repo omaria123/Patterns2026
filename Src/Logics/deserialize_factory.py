@@ -155,10 +155,14 @@ class deserialize_factory(abstract_deserialize_factory):
         # Исключаем дубликаты объектов в памяти
         obj_id = None
         if "id" in data and data["id"]:
-            obj_id = UUID(str(data["id"])) if not isinstance(data["id"], UUID) else data["id"]
-            cached_obj = self._find_in_cache(obj_id)
-            if cached_obj is not None:
-                return cached_obj
+            try:
+                obj_id = UUID(str(data["id"])) if not isinstance(data["id"], UUID) else data["id"]
+            except ValueError:
+                obj_id = None
+            if obj_id is not None:
+                cached_obj = self._find_in_cache(obj_id)
+                if cached_obj is not None:
+                    return cached_obj
 
         args = self._build_constructor_args(model_cls, data)
         try:

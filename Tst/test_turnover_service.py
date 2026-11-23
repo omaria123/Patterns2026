@@ -68,7 +68,7 @@ def test_success_turnover_service_filter_by_warehouse_code(loaded_storage):
     rest_wh = next(w for w in loaded_storage.warehouses.values() if w.name == "Склад ресторана №1")
 
     # Act
-    rows = service.build(filter_dto(unique_code=str(rest_wh.id)))
+    rows = service.build(filter_dto(id=str(rest_wh.id)))
 
     # Assert
     assert len(rows) == 2

@@ -58,7 +58,7 @@ def test_success_api_filter_groups_by_unique_code(client):
     # Act
     response = client.post(
         "/api/filter/groups",
-        json={"unique_code": str(grocery.id), "filter_type": "equals"}
+        json={"id": str(grocery.id), "filter_type": "equals"}
     )
 
     # Assert

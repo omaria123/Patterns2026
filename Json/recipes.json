@@ -3,18 +3,18 @@
     "target_item": {
       "full_name": "Пицца Маргарита классическая 30 см",
       "group": {
-        "id": "955515c6-01b5-4b4b-bd05-130f86542eb0",
+        "id": "d6e27f3d-1984-4bab-9848-0ec379a371c3",
         "name": "Готовые блюда",
         "type": "Src.Models.group_model.group_model"
       },
       "unit": {
         "conversion_factor": 1,
         "base_unit": null,
-        "id": "884e7d9b-58ca-43b9-be89-9acb52aabaf8",
+        "id": "60986fe9-69f5-4c8f-af49-3d3ae2aba3cf",
         "name": "штука",
         "type": "Src.Models.range_model.range_model"
       },
-      "id": "3ce2ffc9-9d54-48a2-990a-893ef7166ccd",
+      "id": "19d6f016-7f4e-4dfe-8093-f1d4bb197bb4",
       "name": "Пицца Маргарита",
       "type": "Src.Models.nomenclature_model.nomenclature_model"
     },
@@ -23,7 +23,7 @@
         "nomenclature": {
           "full_name": "Мука пшеничная в/с для пиццы",
           "group": {
-            "id": "151537f8-5dbf-4914-a7f2-aad546cf3808",
+            "id": "76ea5e3c-9dd3-478e-a977-c0f61178e388",
             "name": "Бакалея",
             "type": "Src.Models.group_model.group_model"
           },
@@ -32,21 +32,21 @@
             "base_unit": {
               "conversion_factor": 1,
               "base_unit": null,
-              "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+              "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
               "name": "грамм",
               "type": "Src.Models.range_model.range_model"
             },
-            "id": "76a5fede-7fe1-4540-a652-0515a0336f4d",
+            "id": "49ac687c-01e1-42b4-9bf7-260fc46dcf99",
             "name": "килограмм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "bfac5f25-0a2f-496f-a730-f719941b8b04",
+          "id": "bb6c0e46-afaf-49d0-8428-604713d1c48c",
           "name": "Мука пшеничная",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 160.0,
         "netto": 160.0,
-        "id": "55d67741-bbbb-419a-87ce-4d17c2bbd33e",
+        "id": "e46ac38e-120b-49c6-a43f-8090cbdeddc5",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -54,24 +54,24 @@
         "nomenclature": {
           "full_name": "Дрожжи хлебопекарные сухие быстродействующие",
           "group": {
-            "id": "151537f8-5dbf-4914-a7f2-aad546cf3808",
+            "id": "76ea5e3c-9dd3-478e-a977-c0f61178e388",
             "name": "Бакалея",
             "type": "Src.Models.group_model.group_model"
           },
           "unit": {
             "conversion_factor": 1,
             "base_unit": null,
-            "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+            "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
             "name": "грамм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "792f5306-709a-4918-a166-ba7a35fe9ebb",
+          "id": "7e382900-74de-4509-bcb8-a333b9f630c5",
           "name": "Дрожжи сухие",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 2.5,
         "netto": 2.5,
-        "id": "dd126744-5976-46cd-8edc-c649ee33803d",
+        "id": "5796b921-2664-489a-b934-1b7349a3db74",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -79,24 +79,24 @@
         "nomenclature": {
           "full_name": "Масло оливковое первого отжима Extra Virgin",
           "group": {
-            "id": "151537f8-5dbf-4914-a7f2-aad546cf3808",
+            "id": "76ea5e3c-9dd3-478e-a977-c0f61178e388",
             "name": "Бакалея",
             "type": "Src.Models.group_model.group_model"
           },
           "unit": {
             "conversion_factor": 1,
             "base_unit": null,
-            "id": "23f60c4a-8500-45bd-9809-8c13d45fe1bb",
+            "id": "751c1944-1e8f-489a-a973-d1b592577181",
             "name": "миллилитр",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "61fc58ba-5da6-452b-95d3-8953d459b3b7",
+          "id": "2e9885bb-5d91-426a-b21b-a8ccbb8b9084",
           "name": "Масло оливковое",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 10.0,
         "netto": 10.0,
-        "id": "b07df968-f45c-4c26-873e-550ea9979256",
+        "id": "3132bdc5-9f85-4e79-87e6-9e516bb3bc08",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -104,24 +104,24 @@
         "nomenclature": {
           "full_name": "Соль поваренная пищевая экстра",
           "group": {
-            "id": "151537f8-5dbf-4914-a7f2-aad546cf3808",
+            "id": "76ea5e3c-9dd3-478e-a977-c0f61178e388",
             "name": "Бакалея",
             "type": "Src.Models.group_model.group_model"
           },
           "unit": {
             "conversion_factor": 1,
             "base_unit": null,
-            "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+            "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
             "name": "грамм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "635ac056-0227-4d15-8674-7fbda2ebbd8a",
+          "id": "7818dbfc-9240-467c-bb29-5a4cfdf3d7ef",
           "name": "Соль",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 3.0,
         "netto": 3.0,
-        "id": "fb967f0f-aa43-4b80-83d0-516c80e43ae0",
+        "id": "862e3eef-15dc-40be-bc2a-b00f584ff8a5",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -129,7 +129,7 @@
         "nomenclature": {
           "full_name": "Соус томатный натуральный для пиццы",
           "group": {
-            "id": "a4070b2f-0283-46ff-ab88-242aae7a0748",
+            "id": "3a8499d5-1d3e-4385-b82a-4180a32d99d6",
             "name": "Соусы",
             "type": "Src.Models.group_model.group_model"
           },
@@ -138,21 +138,21 @@
             "base_unit": {
               "conversion_factor": 1,
               "base_unit": null,
-              "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+              "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
               "name": "грамм",
               "type": "Src.Models.range_model.range_model"
             },
-            "id": "76a5fede-7fe1-4540-a652-0515a0336f4d",
+            "id": "49ac687c-01e1-42b4-9bf7-260fc46dcf99",
             "name": "килограмм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "450c2a10-7e92-40a1-b625-3ac99f13ecd0",
+          "id": "030915ed-91fb-4343-9a27-6b84d3c13757",
           "name": "Томатный соус",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 90.0,
         "netto": 85.0,
-        "id": "72eac418-57f4-4b76-a0ec-da51a31ada29",
+        "id": "301d2854-d2e4-4b47-9906-ece063617634",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -160,7 +160,7 @@
         "nomenclature": {
           "full_name": "Сыр полутвердый Моцарелла 45%",
           "group": {
-            "id": "4fb4878b-9f6f-45e3-be22-0f38d34d5a7c",
+            "id": "4978296b-211e-462f-84d7-38df06d5b4aa",
             "name": "Молочная продукция",
             "type": "Src.Models.group_model.group_model"
           },
@@ -169,21 +169,21 @@
             "base_unit": {
               "conversion_factor": 1,
               "base_unit": null,
-              "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+              "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
               "name": "грамм",
               "type": "Src.Models.range_model.range_model"
             },
-            "id": "76a5fede-7fe1-4540-a652-0515a0336f4d",
+            "id": "49ac687c-01e1-42b4-9bf7-260fc46dcf99",
             "name": "килограмм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "74485d81-94ea-43b8-ac60-036ca2241d01",
+          "id": "4626645b-9048-4a76-a2d7-6e623b8e6d15",
           "name": "Сыр Моцарелла",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 120.0,
         "netto": 115.0,
-        "id": "7b8ffa33-9a56-4ccd-a1ba-b229794ecfe5",
+        "id": "c11021b3-335b-4126-8859-735572064858",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -191,24 +191,24 @@
         "nomenclature": {
           "full_name": "Базилик зеленый свежий листовой",
           "group": {
-            "id": "e56c37d6-a9a0-4e3b-9c59-814b72048ab7",
+            "id": "15125850-0c4f-4863-ad67-633b12b1908e",
             "name": "Овощи и зелень",
             "type": "Src.Models.group_model.group_model"
           },
           "unit": {
             "conversion_factor": 1,
             "base_unit": null,
-            "id": "33d13628-828e-41c2-9ada-c8c5e633d971",
+            "id": "d6e09454-47c1-4088-9738-968ed1bbb80b",
             "name": "грамм",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "99ca4988-7820-4e7d-b7f5-44b2a3d0ae93",
+          "id": "10a4092a-5686-427a-9a89-5a1cae1b8e2f",
           "name": "Базилик свежий",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 5.0,
         "netto": 4.0,
-        "id": "c2a29ccd-3525-4e6e-b333-c2bc1ac0a54a",
+        "id": "6ee110c1-388d-43e4-afee-9e81e6ebeb1a",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       },
@@ -216,24 +216,24 @@
         "nomenclature": {
           "full_name": "Коробка картонная под пиццу 30х30 см",
           "group": {
-            "id": "f4c708f6-d78a-4240-a73b-34149b4bc24d",
+            "id": "a452cb5d-5131-41c4-889b-bdca9a3116bf",
             "name": "Упаковка",
             "type": "Src.Models.group_model.group_model"
           },
           "unit": {
             "conversion_factor": 1,
             "base_unit": null,
-            "id": "884e7d9b-58ca-43b9-be89-9acb52aabaf8",
+            "id": "60986fe9-69f5-4c8f-af49-3d3ae2aba3cf",
             "name": "штука",
             "type": "Src.Models.range_model.range_model"
           },
-          "id": "698b8aa4-3de2-47d4-962b-7d50bfe727dd",
+          "id": "c41142c7-1077-42d8-888d-867f80fb01dd",
           "name": "Коробка для пиццы",
           "type": "Src.Models.nomenclature_model.nomenclature_model"
         },
         "brutto": 1.0,
         "netto": 1.0,
-        "id": "5a8f0ea8-a850-4b1c-a9ac-29a7e61127ce",
+        "id": "bd9f869c-5fee-4ed3-80e8-c9d476e88e3b",
         "name": "",
         "type": "Src.Models.recipe_row_model.recipe_row_model"
       }
@@ -241,7 +241,7 @@
     "sub_recipes": [],
     "brutto_weight": 391.5,
     "netto_weight": 380.5,
-    "id": "62d1e905-89dd-4637-933b-2ae4f6e067aa",
+    "id": "1cc8ce63-77ef-460f-a9db-372ad239afd8",
     "name": "Технологическая карта: Пицца Маргарита",
     "type": "Src.Models.recipe_model.recipe_model"
   }

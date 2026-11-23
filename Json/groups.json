@@ -1,31 +1,31 @@
 [
   {
-    "id": "151537f8-5dbf-4914-a7f2-aad546cf3808",
+    "id": "76ea5e3c-9dd3-478e-a977-c0f61178e388",
     "name": "Бакалея",
     "type": "Src.Models.group_model.group_model"
   },
   {
-    "id": "4fb4878b-9f6f-45e3-be22-0f38d34d5a7c",
+    "id": "4978296b-211e-462f-84d7-38df06d5b4aa",
     "name": "Молочная продукция",
     "type": "Src.Models.group_model.group_model"
   },
   {
-    "id": "a4070b2f-0283-46ff-ab88-242aae7a0748",
+    "id": "3a8499d5-1d3e-4385-b82a-4180a32d99d6",
     "name": "Соусы",
     "type": "Src.Models.group_model.group_model"
   },
   {
-    "id": "e56c37d6-a9a0-4e3b-9c59-814b72048ab7",
+    "id": "15125850-0c4f-4863-ad67-633b12b1908e",
     "name": "Овощи и зелень",
     "type": "Src.Models.group_model.group_model"
   },
   {
-    "id": "955515c6-01b5-4b4b-bd05-130f86542eb0",
+    "id": "d6e27f3d-1984-4bab-9848-0ec379a371c3",
     "name": "Готовые блюда",
     "type": "Src.Models.group_model.group_model"
   },
   {
-    "id": "f4c708f6-d78a-4240-a73b-34149b4bc24d",
+    "id": "a452cb5d-5131-41c4-889b-bdca9a3116bf",
     "name": "Упаковка",
     "type": "Src.Models.group_model.group_model"
   }
