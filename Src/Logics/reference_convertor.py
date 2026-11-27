@@ -56,7 +56,7 @@ class reference_convertor(abstract_convertor):
         if visited is None:
             visited = set()
 
-        obj_id = str(obj.id)
+        obj_id = str(obj.id) if obj.id is not None else f"obj_{id(obj)}"
         if obj_id in visited:
             return {field.strip(): None} if field.strip() else None
 

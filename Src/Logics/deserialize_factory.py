@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, get_args, get_type_hints
 from uuid import UUID
 import importlib
 import json
 import inspect
+import sys
 
 from Src.Core.abstract_class import abstract_reference
 from Src.Core.abstract_deserialize_factory import abstract_deserialize_factory
@@ -98,8 +99,12 @@ class deserialize_factory(abstract_deserialize_factory):
     def _build_constructor_args(self, model_cls: type, data: dict) -> dict:
         """Определяет аргументы конструктора."""
         sig = inspect.signature(model_cls.__init__)
-        args = {}
+        try:
+            hints = get_type_hints(model_cls.__init__, globalns=sys.modules[model_cls.__module__].__dict__)
+        except Exception:
+            hints = {}
 
+        args = {}
         for param_name, param in sig.parameters.items():
             if param_name in ("self", "args", "kwargs"):
                 continue
@@ -107,7 +112,8 @@ class deserialize_factory(abstract_deserialize_factory):
             if param_name in data:
                 val = data[param_name]
                 if isinstance(val, dict):
-                    args[param_name] = self.deserialize(val, target_type=param_name)
+                    hinted_cls = self._extract_model_from_hint(hints.get(param_name))
+                    args[param_name] = self.deserialize(val, target_type=hinted_cls or param_name)
                 elif isinstance(val, list):
                     args[param_name] = [self.deserialize(item) if isinstance(item, dict) else item for item in val]
                 else:
@@ -149,22 +155,26 @@ class deserialize_factory(abstract_deserialize_factory):
         # Исключаем дубликаты объектов в памяти
         obj_id = None
         if "id" in data and data["id"]:
-            obj_id = UUID(str(data["id"])) if not isinstance(data["id"], UUID) else data["id"]
-            cached_obj = self._find_in_cache(obj_id)
-            if cached_obj is not None:
-                return cached_obj
+            try:
+                obj_id = UUID(str(data["id"])) if not isinstance(data["id"], UUID) else data["id"]
+            except ValueError:
+                obj_id = None
+            if obj_id is not None:
+                cached_obj = self._find_in_cache(obj_id)
+                if cached_obj is not None:
+                    return cached_obj
 
         args = self._build_constructor_args(model_cls, data)
         try:
             instance = model_cls(**args)
-        except Exception:
+        except TypeError:
             instance = model_cls()
 
         if obj_id is not None:
             instance.id = obj_id
             self._save_to_cache(obj_id, instance)
 
-         # Заполняем свойства модели, которые не вошли в __init__
+        # Заполняем свойства модели, которые не вошли в __init__
         for key, value in data.items():
             if key in args or key in ("id", "type"):
                 continue
@@ -199,7 +209,16 @@ class deserialize_factory(abstract_deserialize_factory):
                     continue
                 try:
                     setattr(instance, key, value)
-                except (AttributeError, arguments_exception):
+                except AttributeError:
                     pass
 
         return instance
+
+    def _extract_model_from_hint(self, hint: Any) -> type | None:
+        """Извлекает класс-наследник abstract_reference из аннотации типа."""
+        if isinstance(hint, type) and issubclass(hint, abstract_reference):
+            return hint
+        for arg in get_args(hint):
+            if isinstance(arg, type) and issubclass(arg, abstract_reference):
+                return arg
+        return None

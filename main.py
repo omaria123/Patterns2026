@@ -3,6 +3,9 @@ from flask import Response, request
 import json
 from uuid import UUID
 
+from Src.Dtos.filter_dto import filter_dto
+from Src.Logics.prototype import prototype
+from Src.Logics.turnover_service import turnover_service
 from Src.Dtos.report_type_enum import report_type_enum
 from Src.Dtos.report_result_dto import report_result_dto
 from Src.Logics.settings_manager import settings_manager
@@ -16,10 +19,11 @@ from Src.Logics.deserialize_factory import deserialize_factory
 
 app = connexion.FlaskApp(__name__, specification_dir="./")
 service: reference_service | None = None
+osv_service: turnover_service | None = None
 
 def init_app():
     """Инициализация настроек и хранилища при старте сервера."""
-    global service
+    global service, osv_service
     sm = settings_manager()
     if not sm.is_loaded:
         sm.load()
@@ -28,6 +32,7 @@ def init_app():
     if not storage.is_loaded:
         storage.convert(sm.settings)
     service = reference_service(storage)
+    osv_service = turnover_service(storage)
 
 init_app()
 
@@ -211,6 +216,34 @@ def delete_entity(entity_type: str, entity_id: str):
     except (arguments_exception, ValueError) as exc:
         return _json_response({"error": str(exc)}, status=400)
 
+def filter_entities(entity_type: str, body: dict = None):
+    """POST /api/filter/{entity_type} — фильтрует доменные модели через шаблон Прототип."""
+    data = body if body is not None else request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return _json_response({"error": "Тело запроса должно быть JSON-объектом"}, status=400)
+
+    try:
+        target_cls = service.resolve_model_type(entity_type)
+        filter_model = deserialize_factory().deserialize(data, target_type=filter_dto)
+        items = service.get_list(target_cls)
+        filtered = prototype(items).clone(filter_model).data
+        return _json_response(filtered, status=200)
+    except (arguments_exception, ValueError) as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
+
+def get_osv_report(body: dict = None):
+    """POST /api/reports/osv — формирует ОСВ с учетом фильтрации через Прототип."""
+    data = body if body is not None else request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return _json_response({"error": "Тело запроса должно быть JSON-объектом"}, status=400)
+
+    try:
+        filter_model = deserialize_factory().deserialize(data, target_type=filter_dto)
+        rows = osv_service.build(filter_model)
+        return _json_response(rows, status=200)
+    except (arguments_exception, ValueError) as exc:
+        return _json_response({"error": str(exc)}, status=400)
 
 app.add_api("openapi.yml")
 
