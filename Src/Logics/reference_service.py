@@ -8,7 +8,10 @@ from Src.Core.exception import arguments_exception
 from Src.Logics.convert_factory import convert_factory
 from Src.Logics.deserialize_factory import deserialize_factory
 from Src.Logics.storage_manager import storage_manager
-
+from Src.Core.event_type import event_type
+from Src.Dtos.log_type_enum import log_type_enum
+from Src.Logics.observe_service import observe_service
+from Src.Models.log_model import log_model
 
 class reference_service(abstract_service):
     """
@@ -140,6 +143,10 @@ class reference_service(abstract_service):
     def get_list(self, model_cls: type) -> list:
         """Возвращает список всех сущностей указанного класса модели."""
         collection = self._get_collection_by_class(model_cls)
+        observe_service.create(
+            event_type.CRUD_READ,
+            log_model.create("CRUD", log_type_enum.DEBUG, f"Получен список '{model_cls.__name__}'", event_type.CRUD_READ)
+        )
         return list(collection.values())
 
     def get_by_id(self, model_cls: type, entity_id: UUID) -> abstract_reference | None:
@@ -148,7 +155,13 @@ class reference_service(abstract_service):
             raise arguments_exception("Идентификатор должен быть объектом UUID", "entity_id")
 
         collection = self._get_collection_by_class(model_cls)
-        return collection.get(entity_id)
+        entity = collection.get(entity_id)
+        if entity is not None:
+            observe_service.create(
+                event_type.CRUD_READ,
+                log_model.create("CRUD", log_type_enum.DEBUG, f"Прочитана сущность {model_cls.__name__} ({entity_id})", event_type.CRUD_READ)
+            )
+        return entity
 
     def is_referenced(self, item: abstract_reference) -> bool:
         """Проверяет, ссылаются ли другие сущности на переданный объект."""
@@ -165,6 +178,15 @@ class reference_service(abstract_service):
         added = self._storage.add(item)
         if added:
             self._index_item(item)
+            observe_service.create(
+                event_type.CRUD_CREATE,
+                log_model.create("CRUD", log_type_enum.INFO, f"Создана сущность {type(item).__name__} '{item.name}' ({item.id})", event_type.CRUD_CREATE)
+            )
+        else:
+            observe_service.create(
+                event_type.CRUD_ERROR,
+                log_model.create("CRUD", log_type_enum.ERROR, f"Дубликат при создании {type(item).__name__} ({item.id})", event_type.CRUD_ERROR)
+            )
         return added
 
     def update(self, entity_id: UUID, item: abstract_reference) -> bool:
@@ -184,17 +206,29 @@ class reference_service(abstract_service):
         # Запрещаем смену кода (ID), если на сущность есть входящие ссылки
         if item.id != existing.id:
             if self.is_referenced(existing):
+                observe_service.create(
+                    event_type.CRUD_ERROR,
+                    log_model.create("CRUD", log_type_enum.ERROR, f"Запрещено менять код связанной сущности '{existing.name}' ({existing.id})", event_type.CRUD_ERROR)
+                )
                 raise arguments_exception(
                     f"Запрещено менять код сущности '{existing.name}', так как она связана с другими данными",
                     "id"
                 )
             if item.id in collection:
+                observe_service.create(
+                    event_type.CRUD_ERROR,
+                    log_model.create("CRUD", log_type_enum.ERROR, f"Сущность с кодом '{item.id}' уже существует", event_type.CRUD_ERROR)
+                )
                 raise arguments_exception(f"Сущность с кодом '{item.id}' уже существует", "id")
             del collection[existing.id]
 
         self._unindex_item(existing)
         collection[item.id] = item
         self._index_item(item)
+        observe_service.create(
+            event_type.CRUD_UPDATE,
+            log_model.create("CRUD", log_type_enum.INFO, f"Обновлена сущность {type(item).__name__} '{item.name}' ({item.id})", event_type.CRUD_UPDATE)
+        )
         return True
 
     def delete(self, item: abstract_reference) -> bool:
@@ -208,6 +242,10 @@ class reference_service(abstract_service):
             return False
 
         if self.is_referenced(existing):
+            observe_service.create(
+                event_type.CRUD_ERROR,
+                log_model.create("CRUD", log_type_enum.ERROR, f"Запрещено удалять связанную сущность '{existing.name}' ({existing.id})", event_type.CRUD_ERROR)
+            )
             raise arguments_exception(
                 f"Запрещено удалять сущность '{existing.name}', так как она связана с другими данными",
                 "id"
@@ -215,6 +253,10 @@ class reference_service(abstract_service):
 
         self._unindex_item(existing)
         del collection[existing.id]
+        observe_service.create(
+            event_type.CRUD_DELETE,
+            log_model.create("CRUD", log_type_enum.INFO, f"Удалена сущность {type(existing).__name__} '{existing.name}' ({existing.id})", event_type.CRUD_DELETE)
+        )
         return True
 
     def serialize(self, obj: Any) -> Any:

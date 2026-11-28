@@ -6,7 +6,10 @@ from Src.Dtos.filter_dto import filter_dto
 from Src.Dtos.turnover_dto import turnover_dto
 from Src.Logics.prototype import prototype
 from Src.Logics.storage_manager import storage_manager
-
+from Src.Core.event_type import event_type
+from Src.Dtos.log_type_enum import log_type_enum
+from Src.Logics.observe_service import observe_service
+from Src.Models.log_model import log_model
 
 class turnover_service:
     """Сервис формирования оборотно-сальдовой ведомости (ОСВ) на базе шаблона Прототип."""
@@ -56,8 +59,12 @@ class turnover_service:
                 dto.income += val
             else:
                 dto.outcome += abs(val)
-
-        return list(groups.values())
+        rows = list(groups.values())
+        observe_service.create(
+            event_type.STORAGE_OSV,
+            log_model.create("Storage", log_type_enum.INFO, f"Сформирована ОСВ по складским остаткам", event_type.STORAGE_OSV)
+        )
+        return rows 
 
     def _filter_by_entities(self, proto: prototype, filter_model: filter_dto) -> prototype:
         """Применяет фильтр к самим транзакциям или их вложенным сущностям через Прототип."""
