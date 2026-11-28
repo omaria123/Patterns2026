@@ -292,4 +292,35 @@ paths:
           content:
             application/json:
               schema:
-                type: object           
+                type: object    
+  /api/logs:
+    get:
+      summary: Получить журнал логов системы
+      operationId: main.get_logs
+      responses:
+        '200':
+          description: Список записей журнала логов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/settings/format:
+    put:
+      summary: Изменить формат отчета по умолчанию в настройках
+      operationId: main.change_settings_format
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              response_format: "csv"
+      responses:
+        '200':
+          description: Настройки успешно обновлены
+        '400':
+          description: Некорректный формат      

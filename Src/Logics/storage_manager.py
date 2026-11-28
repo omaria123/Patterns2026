@@ -8,6 +8,10 @@ from Src.Models.group_model import group_model
 from Src.Models.nomenclature_model import nomenclature_model
 from Src.Models.recipe_model import recipe_model          
 from Src.Models.recipe_row_model import recipe_row_model 
+from Src.Core.event_type import event_type
+from Src.Dtos.log_type_enum import log_type_enum
+from Src.Logics.observe_service import observe_service
+from Src.Models.log_model import log_model
 
 from datetime import datetime
 from Src.Models.transaction_model import transaction_model
@@ -44,6 +48,9 @@ class storage_manager(abstract_manager):
             nomenclature_model: self._nomenclature,
             recipe_model: self._recipes,
             transaction_model: self._transactions
+        }
+        self._operation_events: dict[type, event_type] = {
+            transaction_model: event_type.STORAGE_OPERATION
         }
 
     @classmethod
@@ -129,9 +136,20 @@ class storage_manager(abstract_manager):
 
         # Контроль уникальности: запрет добавления объекта с уже существующим ID
         if item.id in target:
+            if isinstance(item, transaction_model):
+                observe_service.create(
+                    event_type.STORAGE_OPERATION,
+                    log_model.create("Storage", log_type_enum.INFO, f"Складская операция '{item.name}': {item.value}", event_type.STORAGE_OPERATION)
+                )
             return False
 
         target[item.id] = item
+        op_event = self._operation_events.get(type(item))
+        if op_event is not None:
+            observe_service.create(
+                op_event,
+                log_model.create("Storage", log_type_enum.INFO, f"Складская операция '{item.name}' ({item.id})", op_event)
+            )
         return True
 
     #Логика первого старта 
@@ -156,6 +174,10 @@ class storage_manager(abstract_manager):
             # Формируем стартовые данные
             self._initialize_default_data()
             self._is_loaded = True
+            observe_service.create(
+                event_type.STORAGE_LOAD,
+                log_model.create("Storage", log_type_enum.INFO, f"Загружены стартовые данные склада", event_type.STORAGE_LOAD)
+            )
             return True
 
         except Exception:

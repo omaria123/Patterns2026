@@ -13,9 +13,13 @@ from Src.Logics.storage_manager import storage_manager
 from Src.Logics.report_factory import report_factory
 from Src.Core.exception import arguments_exception
 from Src.Logics.convert_factory import convert_factory
-from Src.Core.exception import arguments_exception
 from Src.Logics.reference_service import reference_service
 from Src.Logics.deserialize_factory import deserialize_factory
+from Src.Core.event_type import event_type
+from Src.Dtos.log_type_enum import log_type_enum
+from Src.Logics.observe_service import observe_service
+from Src.Models.log_model import log_model
+from Src.Logics.file_logger_observer import file_logger_observer
 
 app = connexion.FlaskApp(__name__, specification_dir="./")
 service: reference_service | None = None
@@ -24,6 +28,7 @@ osv_service: turnover_service | None = None
 def init_app():
     """Инициализация настроек и хранилища при старте сервера."""
     global service, osv_service
+    observe_service.add(file_logger_observer("logs.log"))
     sm = settings_manager()
     if not sm.is_loaded:
         sm.load()
@@ -64,6 +69,23 @@ def _parse_uuid(raw_id: str) -> UUID:
     except ValueError:
         raise arguments_exception(f"Некорректный формат кода (UUID): '{raw_id}'", "entity_id")
 
+@app.app.before_request
+def _log_web_request():
+    """Логирование входящего HTTP-запроса."""
+    observe_service.create(
+        event_type.WEB_REQUEST,
+        log_model.create("Web", log_type_enum.DEBUG, f"Запрос: {request.method} {request.path}", event_type.WEB_REQUEST)
+    )
+
+@app.app.after_request
+def _log_web_response(response):
+    """Логирование результата HTTP-ответа."""
+    level = log_type_enum.INFO if response.status_code < 400 else log_type_enum.ERROR
+    observe_service.create(
+        event_type.WEB_RESPONSE,
+        log_model.create("Web", level, f"Ответ: {request.method} {request.path} -> {response.status_code}", event_type.WEB_RESPONSE)
+    )
+    return response
 # Список объектов и их кодов (ID) 
 @app.route("/api/list/<entity_type>", methods=["GET"])
 def list_entities(entity_type: str):
@@ -243,6 +265,21 @@ def get_osv_report(body: dict = None):
         rows = osv_service.build(filter_model)
         return _json_response(rows, status=200)
     except (arguments_exception, ValueError) as exc:
+        return _json_response({"error": str(exc)}, status=400)
+
+def get_logs():
+    """Возвращает записи журнала из файла лога."""
+    return _json_response(file_logger_observer("logs.log").read_logs(), status=200)
+
+def change_settings_format(body: dict = None):
+    """Изменяет формат отчета по умолчанию в настройках и логирует событие."""
+    data = body if body is not None else request.get_json(silent=True)
+    if not isinstance(data, dict) or "response_format" not in data:
+        return _json_response({"error": "Необходимо передать поле response_format"}, status=400)
+    try:
+        settings_manager().set_response_format(data["response_format"])
+        return _json_response({"response_format": settings_manager().settings.response_format.value}, status=200)
+    except arguments_exception as exc:
         return _json_response({"error": str(exc)}, status=400)
 
 app.add_api("openapi.yml")

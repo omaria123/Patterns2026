@@ -1,13 +1,13 @@
 [
   {
     "address": "г. Москва, ул. Производственная, д. 5",
-    "id": "86dac43f-efde-4884-9997-3c7acd686536",
+    "id": "8416de75-be47-406f-9f33-9891d1f9fe20",
     "name": "Центральный склад цеха",
     "type": "Src.Models.warehouse_model.warehouse_model"
   },
   {
     "address": "г. Москва, ул. Ленина, д. 10",
-    "id": "b4b685b5-4749-4ec0-a266-be69e7aedef9",
+    "id": "f6b29160-5752-4941-8e78-90466a6fcec7",
     "name": "Склад ресторана №1",
     "type": "Src.Models.warehouse_model.warehouse_model"
   }

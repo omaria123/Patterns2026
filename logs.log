@@ -1,0 +1,31 @@
+2026-11-28 13:39:11 | INFO  | Settings | load_settings | Загружены настройки из файла 'settings.json'
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Приход: Мука пшеничная' (f503b9f5-7e56-48d0-8dd1-53ec3864b89b)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Списание: Мука пшеничная' (7eca3f06-1efe-4d83-a33b-0bca96acd3b6)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Приход: Сыр Моцарелла' (fa8e7091-43c9-41ff-b7ae-158f9c72890a)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Списание: Сыр Моцарелла' (db095dd9-2f76-43a0-b0ff-16efa43c8cc7)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Приход: Мука пшеничная' (285ad531-0395-4c2d-922b-61acae8bff35)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Приход: Коробка для пиццы' (dfc78de0-0db6-4813-a459-a2413dcc10a7)
+2026-11-28 13:39:11 | INFO  | Storage | storage_operation | Складская операция 'Списание: Коробка для пиццы' (e01b9f0b-381b-4fa2-bb74-b72a44912b6c)
+2026-11-28 13:39:11 | INFO  | Storage | storage_load | Загружены стартовые данные склада
+2026-11-28 13:41:20 | DEBUG | Web | web_request | Запрос: PUT /api/settings/format
+2026-11-28 13:41:20 | INFO  | Settings | change_settings | Изменен формат ответа по умолчанию на 'csv'
+2026-11-28 13:41:20 | INFO  | Web | web_response | Ответ: PUT /api/settings/format -> 200
+2026-11-28 13:42:40 | DEBUG | Web | web_request | Запрос: POST /api/entity/warehouse
+2026-11-28 13:42:40 | INFO  | CRUD | crud_create | Создана сущность warehouse_model 'Новый склад' (b3c7588a-b999-460a-a555-47d69874cf8c)
+2026-11-28 13:42:40 | INFO  | Web | web_response | Ответ: POST /api/entity/warehouse -> 201
+2026-11-28 13:44:00 | DEBUG | Web | web_request | Запрос: DELETE /api/entity/warehouse/b3c7588a-b999-460a-a555-47d69874cf8c
+2026-11-28 13:44:00 | DEBUG | CRUD | crud_read | Прочитана сущность warehouse_model (b3c7588a-b999-460a-a555-47d69874cf8c)
+2026-11-28 13:44:00 | INFO  | CRUD | crud_delete | Удалена сущность warehouse_model 'Новый склад' (b3c7588a-b999-460a-a555-47d69874cf8c)
+2026-11-28 13:44:00 | INFO  | Web | web_response | Ответ: DELETE /api/entity/warehouse/b3c7588a-b999-460a-a555-47d69874cf8c -> 200
+2026-11-28 13:44:33 | DEBUG | Web | web_request | Запрос: GET /api/list/groups
+2026-11-28 13:44:33 | DEBUG | CRUD | crud_read | Получен список 'group_model'
+2026-11-28 13:44:33 | INFO  | Web | web_response | Ответ: GET /api/list/groups -> 200
+2026-11-28 13:44:58 | DEBUG | Web | web_request | Запрос: DELETE /api/entity/groups/c72e6cb0-174f-4143-85e9-ab68a5e07f80
+2026-11-28 13:44:58 | DEBUG | CRUD | crud_read | Прочитана сущность group_model (c72e6cb0-174f-4143-85e9-ab68a5e07f80)
+2026-11-28 13:44:58 | ERROR | CRUD | crud_error | Запрещено удалять связанную сущность 'Бакалея' (c72e6cb0-174f-4143-85e9-ab68a5e07f80)
+2026-11-28 13:44:58 | ERROR | Web | web_response | Ответ: DELETE /api/entity/groups/c72e6cb0-174f-4143-85e9-ab68a5e07f80 -> 400
+2026-11-28 13:46:03 | DEBUG | Web | web_request | Запрос: POST /api/reports/osv
+2026-11-28 13:46:03 | INFO  | Storage | storage_osv | Сформирована ОСВ по складским остаткам
+2026-11-28 13:46:03 | INFO  | Web | web_response | Ответ: POST /api/reports/osv -> 200
+2026-11-28 13:46:57 | DEBUG | Web | web_request | Запрос: GET /api/logs
+2026-11-28 13:46:57 | INFO  | Web | web_response | Ответ: GET /api/logs -> 200
